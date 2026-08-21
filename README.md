@@ -4,7 +4,7 @@ A tool for comparing, filtering, and annotating structural variants across sampl
 
 ## Development Setup
 
-Requires [Conda](https://docs.conda.io/).
+A [Conda](https://docs.conda.io/) environment configuration is provided for convenience.
 
 ```bash
 conda env create -f environment.yml
