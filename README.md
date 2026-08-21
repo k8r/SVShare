@@ -2,6 +2,15 @@
 
 A tool for comparing, filtering, and annotating structural variants across samples.
 
+## Development Setup
+
+Requires [Conda](https://docs.conda.io/).
+
+```bash
+conda env create -f environment.yml
+conda activate svshare
+```
+
 ## Workflow
 
 SVShare is organized into three main stages: **Analyze**, **Filter**, and **Report**.
