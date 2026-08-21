@@ -2,6 +2,15 @@
 
 A tool for comparing, filtering, and annotating structural variants across samples.
 
+## Development Setup
+
+Requires [Conda](https://docs.conda.io/).
+
+```bash
+conda env create -f environment.yml
+conda activate svshare
+```
+
 ## Workflow
 
 SVShare is organized into three main stages: **Analyze**, **Filter**, and **Report**.
@@ -18,7 +27,7 @@ SVShare is organized into three main stages: **Analyze**, **Filter**, and **Repo
 
 ### Filter
 
-Use an existing SVShare analysis to apply user-selected filters, such as caller support, SV type, gnomAD frequency, number of samples, genes, or genomic region.
+SVShare provides default filters to highlight rare structural variants shared across samples. Users can adjust these filters for their own analysis.
 
 ### Report
 
@@ -37,23 +46,19 @@ svshare analyze \
 
 ### Filter
 
+Running `svshare filter` without additional filter options uses the defaults below:
+
 ```bash
-svshare filter \
-  --results results/ \
-  --caller-support both \
-  --max-gnomad-frequency 0.01 \
-  --sv-type DEL \
-  --min-samples 2 \
-  --genes BRCA1 BRCA2 TP53
+svshare filter --results results/
 ```
 
-Possible filter options include:
+Available filter options:
 
 ```text
---caller-support {both,sniffles2,cutesv,any}
---sv-type {DEL,DUP,INS,INV,BND,any}
---max-gnomad-frequency <number>
---min-samples <number>
+--caller-support {both,sniffles2,cutesv,any}   Default: any
+--sv-type {DEL,DUP,INS,INV,BND,any}            Default: any
+--max-gnomad-frequency <number>                 Default: 0.01
+--min-samples <number>                          Default: 2
 --genes <gene1> <gene2> ...
 --gene-file <file>
 --region <genomic-region>
