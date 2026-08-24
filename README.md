@@ -35,10 +35,12 @@ Generate a formatted report from either the complete or filtered SVShare results
 
 ## Command-Line Interface
 
+SVShare is currently run as a Python script using `python3 svshare.py`.
+
 ### Analyze
 
 ```bash
-svshare analyze \
+python3 svshare.py analyze \
   --samples sample1.bam sample2.bam sample3.bam \
   --reference GRCh38.fa \
   --output results/
@@ -46,10 +48,11 @@ svshare analyze \
 
 ### Filter
 
-Running `svshare filter` without additional filter options uses the defaults below:
+Running `filter` without additional filter options uses the defaults below:
 
 ```bash
-svshare filter --results results/
+python3 svshare.py filter \
+  --results results/
 ```
 
 Available filter options:
@@ -57,8 +60,8 @@ Available filter options:
 ```text
 --caller-support {both,sniffles2,cutesv,any}   Default: any
 --sv-type {DEL,DUP,INS,INV,BND,any}            Default: any
---max-gnomad-frequency <number>                 Default: 0.01
---min-samples <number>                          Default: 2
+--max-gnomad-frequency <number>                Default: 0.01
+--min-samples <number>                         Default: 2
 --genes <gene1> <gene2> ...
 --gene-file <file>
 --region <genomic-region>
@@ -67,7 +70,7 @@ Available filter options:
 For longer gene lists, users can provide a text file:
 
 ```bash
-svshare filter \
+python3 svshare.py filter \
   --results results/ \
   --gene-file genes.txt
 ```
@@ -84,7 +87,7 @@ PALB2
 ### Report
 
 ```bash
-svshare report \
+python3 svshare.py report \
   --results results/ \
   --output report.html
 ```
