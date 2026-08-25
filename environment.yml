@@ -7,3 +7,4 @@ channels:
   - https://repo.anaconda.com/pkgs/r
 dependencies:
   - python=3.10
+  - sniffles=2.8.0
