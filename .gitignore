@@ -1,5 +1,6 @@
 my_notes.txt
 TestData/human_GRCh38_no_alt_analysis_set.fasta
+TestData/human_GRCh38_no_alt_analysis_set.fasta.fai
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
