@@ -9,3 +9,4 @@ dependencies:
   - python=3.10
   - sniffles=2.8.0
   - pysam=0.24.0
+  - pytest
