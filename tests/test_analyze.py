@@ -1,8 +1,11 @@
-# Tests for the analyze stage: currently just BAM/reference compatibility
-# checking (svshare/reference.py's check_bam_reference_compatibility).
 from pathlib import Path
+from types import SimpleNamespace
 
-from svshare.reference import check_bam_reference_compatibility
+import pysam
+import pytest
+
+from svshare import analyze
+from svshare.reference import check_bam_reference_compatibility, ensure_reference_index
 
 TEST_BAM = Path(__file__).parent.parent / "DevData" / "HG002.test.bam"
 TEST_REFERENCE = Path(__file__).parent / "fixtures" / "test_reference.fasta"
@@ -55,3 +58,57 @@ def test_length_mismatch_is_reported(tmp_path):
     assert len(issues) == 1
     assert mismatched_name in issues[0]
     assert "length mismatch" in issues[0]
+
+
+def test_ensure_reference_index_noop_when_fai_exists(monkeypatch):
+    calls = []
+    monkeypatch.setattr(pysam, "faidx", lambda path: calls.append(path))
+
+    ensure_reference_index(TEST_REFERENCE)
+
+    assert calls == []
+
+
+def test_ensure_reference_index_builds_when_missing_and_writable(tmp_path, monkeypatch):
+    reference_path = tmp_path / "reference.fasta"
+    reference_path.write_text("placeholder")
+
+    calls = []
+    monkeypatch.setattr(pysam, "faidx", lambda path: calls.append(path))
+
+    ensure_reference_index(reference_path)
+
+    assert calls == [str(reference_path)]
+
+
+def test_ensure_reference_index_raises_when_directory_not_writable(tmp_path, monkeypatch):
+    reference_path = tmp_path / "reference.fasta"
+    reference_path.write_text("placeholder")
+
+    monkeypatch.setattr("svshare.reference.os.access", lambda path, mode: False)
+    calls = []
+    monkeypatch.setattr(pysam, "faidx", lambda path: calls.append(path))
+
+    with pytest.raises(PermissionError):
+        ensure_reference_index(reference_path)
+
+    assert calls == []
+
+
+def test_run_completes_when_reference_compatible(tmp_path):
+    args = SimpleNamespace(samples=[TEST_BAM], reference=TEST_REFERENCE, output=tmp_path / "results")
+
+    analyze.run(args)
+
+
+def test_run_aborts_when_reference_incompatible(tmp_path):
+    contigs = read_fai(f"{TEST_REFERENCE}.fai")
+    del contigs["chr1"]
+
+    reference_path = tmp_path / "reference.fasta"
+    write_fai(f"{reference_path}.fai", contigs)
+
+    args = SimpleNamespace(samples=[TEST_BAM], reference=reference_path, output=tmp_path / "results")
+
+    with pytest.raises(SystemExit):
+        analyze.run(args)
