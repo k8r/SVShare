@@ -1,5 +1,7 @@
+# `analyze` subcommand: call, compare, and annotate SVs across samples.
 from .reference import check_bam_reference_compatibility, ensure_reference_index
 
+# Check each sample against the reference, then run the analysis.
 def run(args):
     ensure_reference_index(args.reference)
 

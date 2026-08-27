@@ -1,8 +1,10 @@
+# Command-line interface: parse arguments and run the chosen subcommand.
 import argparse
 from pathlib import Path
 
 from . import analyze, filtering, reporting
 
+# Build the parser with the analyze, filter, and report subcommands.
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="svshare",
@@ -11,7 +13,7 @@ def build_parser():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     analyze_parser = subparsers.add_parser(
-        "analyze", help="Call and merge structural variants across samples."
+        "analyze", help="Call, compare, and annotate structural variants across samples."
     )
     analyze_parser.add_argument(
         "--samples", nargs="+", required=True, type=Path,
@@ -56,7 +58,8 @@ def build_parser():
         "--results", required=True, type=Path, help="Directory containing analyze or filter results."
     )
     report_parser.add_argument(
-        "--output", required=True, type=Path, help="Report file to write, e.g. report.html."
+        "--output", type=Path, default=None,
+        help="Report file to write (default: <results>/report.html).",
     )
     report_parser.set_defaults(func=reporting.run)
 

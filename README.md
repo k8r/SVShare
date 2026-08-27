@@ -88,6 +88,8 @@ PALB2
 
 ```bash
 python3 -m svshare report \
-  --results results/ \
-  --output report.html
+  --results results/
 ```
+
+The report is written to `<results>/report.html` by default; pass `--output`
+to write it elsewhere.

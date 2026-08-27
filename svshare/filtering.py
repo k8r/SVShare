@@ -1,3 +1,6 @@
+# `filter` subcommand: narrow analysis results by caller, type, frequency, genes, or region.
+
+# Combine --genes values and --gene-file lines into a sorted, deduplicated list.
 def parse_gene_list(genes, gene_file):
     gene_set = set(genes or [])
     if gene_file:

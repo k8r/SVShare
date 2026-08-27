@@ -1,3 +1,4 @@
+# Helpers for working with the reference genome and its compatibility with sample data.
 import os
 from pathlib import Path
 
