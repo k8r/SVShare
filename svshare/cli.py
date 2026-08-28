@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 
 from . import analyze, filtering, reporting
+from .callers import CALLERS
 
 # Build the parser with the analyze, filter, and report subcommands.
 def build_parser():
@@ -32,7 +33,7 @@ def build_parser():
         "--results", required=True, type=Path, help="Directory containing analyze results."
     )
     filter_parser.add_argument(
-        "--caller-support", choices=["both", "sniffles2", "cutesv", "any"], default="any"
+        "--caller-support", choices=[*CALLERS, "both", "any"], default="any"
     )
     filter_parser.add_argument(
         "--sv-type", choices=["DEL", "DUP", "INS", "INV", "BND", "any"], default="any"

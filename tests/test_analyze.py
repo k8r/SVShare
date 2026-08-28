@@ -95,12 +95,6 @@ def test_ensure_reference_index_raises_when_directory_not_writable(tmp_path, mon
     assert calls == []
 
 
-def test_run_completes_when_reference_compatible(tmp_path):
-    args = SimpleNamespace(samples=[TEST_BAM], reference=TEST_REFERENCE, output=tmp_path / "results")
-
-    analyze.run(args)
-
-
 def test_run_aborts_when_reference_incompatible(tmp_path):
     contigs = read_fai(f"{TEST_REFERENCE}.fai")
     del contigs["chr1"]

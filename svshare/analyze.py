@@ -1,9 +1,9 @@
 # `analyze` subcommand: call, compare, and annotate SVs across samples.
 import sys
 
+from .callers import CALLERS
 from .reference import check_bam_reference_compatibility, ensure_reference_index
 
-# Check each sample against the reference, then run the analysis.
 def run(args):
     ensure_reference_index(args.reference)
 
@@ -21,3 +21,9 @@ def run(args):
 
     print(f"Reference: {args.reference}")
     print(f"Output directory: {args.output}")
+
+    args.output.mkdir(parents=True, exist_ok=True)
+    for sample in args.samples:
+        for name, caller in CALLERS.items():
+            print(f"  calling SVs with {name}: {sample}")
+            caller(sample, args.reference, args.output)
