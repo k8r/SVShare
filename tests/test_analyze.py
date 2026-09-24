@@ -102,7 +102,9 @@ def test_run_aborts_when_reference_incompatible(tmp_path):
     reference_path = tmp_path / "reference.fasta"
     write_fai(f"{reference_path}.fai", contigs)
 
-    args = SimpleNamespace(samples=[TEST_BAM], reference=reference_path, output=tmp_path / "results")
+    args = SimpleNamespace(
+        samples=[TEST_BAM], reference=reference_path, output=tmp_path / "results", vcf_dir=None
+    )
 
     with pytest.raises(SystemExit):
         analyze.run(args)

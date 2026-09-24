@@ -27,6 +27,11 @@ def build_parser():
     analyze_parser.add_argument(
         "--output", required=True, type=Path, help="Directory to write analysis results to."
     )
+    # Development only (hidden from --help): reuse caller VCFs from an earlier run,
+    # named <sample>.sniffles2.vcf and <sample>.cutesv.vcf, instead of rerunning the callers.
+    analyze_parser.add_argument(
+        "--vcf-dir", type=Path, default=None, help=argparse.SUPPRESS
+    )
     analyze_parser.set_defaults(func=analyze.run)
 
     filter_parser = subparsers.add_parser("filter", help="Filter analysis results.")

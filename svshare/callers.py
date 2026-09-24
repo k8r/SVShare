@@ -2,20 +2,19 @@
 # Each caller function has the same signature -- (bam, reference, out_dir, threads)
 # -- and returns (vcf_path, command), so analyze can treat them uniformly and
 # report exactly what was run.
-import subprocess
 from pathlib import Path
 
+from .commands import run_command
 
-def _run(cmd):
-    result = subprocess.run(cmd, stderr=subprocess.PIPE, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"{cmd[0]} failed (exit {result.returncode})\n{result.stderr.strip()}"
-        )
+
+# Path of the VCF a caller writes for a BAM, e.g. results/HG002.sniffles2.vcf.
+# analyze --vcf-dir expects existing VCFs to follow the same naming.
+def caller_vcf_path(bam, out_dir, caller_name):
+    return Path(out_dir) / f"{Path(bam).stem}.{caller_name}.vcf"
 
 
 def run_sniffles2(bam, reference, out_dir, threads=4):
-    out_vcf = Path(out_dir) / f"{Path(bam).stem}.sniffles2.vcf"
+    out_vcf = caller_vcf_path(bam, out_dir, "sniffles2")
     cmd = [
         "sniffles",
         "--input", str(bam),
@@ -24,13 +23,12 @@ def run_sniffles2(bam, reference, out_dir, threads=4):
         "--threads", str(threads),
         "--allow-overwrite",
     ]
-    _run(cmd)
+    run_command(cmd)
     return out_vcf, cmd
 
 
 def run_cutesv(bam, reference, out_dir, threads=4):
-    out_dir = Path(out_dir)
-    out_vcf = out_dir / f"{Path(bam).stem}.cutesv.vcf"
+    out_vcf = caller_vcf_path(bam, out_dir, "cutesv")
     cmd = [
         "cuteSV",
         str(bam),
@@ -39,7 +37,7 @@ def run_cutesv(bam, reference, out_dir, threads=4):
         str(out_dir),
         "--threads", str(threads),
     ]
-    _run(cmd)
+    run_command(cmd)
     return out_vcf, cmd
 
 

@@ -1,8 +1,10 @@
 # `analyze` subcommand: call, compare, and annotate SVs across samples.
 import shlex
 import sys
+from pathlib import Path
 
-from .callers import CALLERS
+from .callers import CALLERS, caller_vcf_path
+from .merging import run_jasmine
 from .reference import check_bam_reference_compatibility, ensure_reference_index
 
 
@@ -25,16 +27,27 @@ def run(args):
     commands = {sample: [] for sample in args.samples}
     for i, sample in enumerate(args.samples, start=1):
         print(f"\nSample {i}/{len(args.samples)}: {sample}")
+        caller_vcfs = []
         for name, caller in CALLERS.items():
-            print(f"  calling SVs with {name}")
-            _vcf, cmd = caller(sample, args.reference, args.output)
-            commands[sample].append(cmd)
+            if args.vcf_dir:
+                vcf = caller_vcf_path(sample, args.vcf_dir, name)
+                print(f"  using existing {name} VCF: {vcf}")
+            else:
+                print(f"  calling SVs with {name}")
+                vcf, cmd = caller(sample, args.reference, args.output)
+                commands[sample].append(cmd)
+            caller_vcfs.append(vcf)
+
+        print("  merging caller results with Jasmine")
+        merged_vcf = args.output / f"{Path(sample).stem}.merged.vcf"
+        _vcf, cmd = run_jasmine(caller_vcfs, merged_vcf, args.output)
+        commands[sample].append(cmd)
 
     print_summary(args, commands)
 
 
-# Print the samples, reference, and output location, then the numbered caller
-# commands run for each sample.
+# Print the samples, reference, and output location, then the numbered
+# commands (callers and Jasmine) run for each sample.
 def print_summary(args, commands):
     print()
     print(f"Analyzed {len(args.samples)} sample(s):")
@@ -42,6 +55,8 @@ def print_summary(args, commands):
         print(f"  - {sample}")
     print(f"Reference: {args.reference}")
     print(f"Output directory: {args.output}")
+    if args.vcf_dir:
+        print(f"Existing caller VCFs from: {args.vcf_dir}")
 
     print()
     print("Commands run:")
