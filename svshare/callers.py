@@ -4,6 +4,7 @@
 import subprocess
 from pathlib import Path
 
+
 def _run(cmd):
     print(cmd)
     result = subprocess.run(cmd, stderr=subprocess.PIPE, text=True)
@@ -11,6 +12,7 @@ def _run(cmd):
         raise RuntimeError(
             f"{cmd[0]} failed (exit {result.returncode})\n{result.stderr.strip()}"
         )
+
 
 def run_sniffles2(bam, reference, out_dir, threads=4):
     out_vcf = Path(out_dir) / f"{Path(bam).stem}.sniffles2.vcf"
@@ -24,6 +26,7 @@ def run_sniffles2(bam, reference, out_dir, threads=4):
     ])
     return out_vcf
 
+
 def run_cutesv(bam, reference, out_dir, threads=4):
     out_dir = Path(out_dir)
     out_vcf = out_dir / f"{Path(bam).stem}.cutesv.vcf"
@@ -36,6 +39,7 @@ def run_cutesv(bam, reference, out_dir, threads=4):
         "--threads", str(threads),
     ])
     return out_vcf
+
 
 CALLERS = {
     "sniffles2": run_sniffles2,

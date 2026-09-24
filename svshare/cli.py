@@ -5,6 +5,7 @@ from pathlib import Path
 from . import analyze, filtering, reporting
 from .callers import CALLERS
 
+
 # Build the parser with the analyze, filter, and report subcommands.
 def build_parser():
     parser = argparse.ArgumentParser(
@@ -66,10 +67,12 @@ def build_parser():
 
     return parser
 
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
     args.func(args)
+
 
 if __name__ == "__main__":
     main()

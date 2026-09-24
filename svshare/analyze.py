@@ -4,6 +4,7 @@ import sys
 from .callers import CALLERS
 from .reference import check_bam_reference_compatibility, ensure_reference_index
 
+
 def run(args):
     ensure_reference_index(args.reference)
 

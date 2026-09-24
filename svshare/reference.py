@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pysam
 
+
 # Ensure the reference FASTA has a .fai index, building it once if missing.
 def ensure_reference_index(reference_path):
     fai_path = Path(f"{reference_path}.fai")
@@ -16,6 +17,7 @@ def ensure_reference_index(reference_path):
         )
     print(f"Indexing reference {reference_path} ...")
     pysam.faidx(str(reference_path))
+
 
 # Compare a BAM's header contigs (name + length) against the reference .fai,
 # returning a list of mismatch descriptions (empty means compatible).
