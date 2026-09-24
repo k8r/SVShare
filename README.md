@@ -19,8 +19,8 @@ SVShare is organized into three main stages: **Analyze**, **Filter**, and **Repo
 
 1. **Provide BAM or CRAM files** for each sample.
 2. **Run Sniffles2 and cuteSV** on each sample to identify structural variants.
-3. **Use Truvari to identify variants supported by both callers.**
-4. **Use Jasmine to identify shared structural variants across samples.**
+3. **Use Jasmine to identify SVs supported by both callers** in each sample.
+4. **Use Jasmine to identify SVs shared across samples.**
 5. **Compare shared structural variants against gnomAD** to determine how common or rare they are in the population.
 6. **Use BEDTools with gene annotations** to identify affected genes and genomic regions.
 7. **Save the complete analysis results.**
