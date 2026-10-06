@@ -2,6 +2,8 @@
 import argparse
 from pathlib import Path
 
+import svshare
+
 from . import analyze, filtering, reporting
 from .callers import CALLERS
 
@@ -10,12 +12,13 @@ from .callers import CALLERS
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="svshare",
-        description="Compare, filter, and annotate structural variants across samples.",
+        description=svshare.__doc__,
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     analyze_parser = subparsers.add_parser(
-        "analyze", help="Call, compare, and annotate structural variants across samples."
+        "analyze",
+        help="Call, compare, and annotate structural variants across samples and callers.",
     )
     analyze_parser.add_argument(
         "--samples", nargs="+", required=True, type=Path,
