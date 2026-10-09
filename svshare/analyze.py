@@ -6,6 +6,7 @@ from pathlib import Path
 from .callers import CALLERS, caller_vcf_path
 from .database import write_database
 from .merging import run_jasmine
+from .population import add_gnomad_frequencies
 from .reference import check_bam_reference_compatibility, ensure_reference_index
 
 # Jasmine's merge of every VCF from every sample across callers.
@@ -14,14 +15,15 @@ DATABASE = "svshare.db"
 
 
 def run(args):
-    # Use absolute paths so the commands run, shown in the summary and stored in
-    # the database, work from any directory. absolute() rather than resolve(), so
-    # a symlinked reference still finds the .fai next to the link.
+    # Make paths absolute so the paths and commands in the summary and database
+    # work from any directory.
     args.samples = [sample.absolute() for sample in args.samples]
     args.reference = args.reference.absolute()
     args.output = args.output.absolute()
     if args.vcf_dir:
         args.vcf_dir = args.vcf_dir.absolute()
+    if args.gnomad:
+        args.gnomad = args.gnomad.absolute()
 
     ensure_reference_index(args.reference)
 
@@ -62,7 +64,14 @@ def run(args):
     merged_vcf = args.output / MERGED_VCF
     _vcf, merge_cmd = run_jasmine([vcf for _s, _c, vcf in inputs], merged_vcf, args.output)
     run_commands.append((None, "jasmine", merge_cmd))
-    write_database(merged_vcf, inputs, args.output / DATABASE, run_commands)
+    db_path = write_database(merged_vcf, inputs, args.output / DATABASE, run_commands)
+
+    if args.gnomad:
+        print("\nLooking up SVs in gnomAD")
+        matched, total = add_gnomad_frequencies(db_path, args.gnomad)
+        print(f"  {matched} of {total} SVs found in gnomAD")
+    else:
+        print("\nNo --gnomad file given, so SVs weren't looked up in gnomAD")
 
     print_summary(args, commands, merge_cmd)
 
@@ -79,6 +88,8 @@ def print_summary(args, commands, merge_cmd):
     print(f"Output directory: {args.output}")
     if args.vcf_dir:
         print(f"Existing caller VCFs from: {args.vcf_dir}")
+    if args.gnomad:
+        print(f"gnomAD: {args.gnomad}")
 
     print()
     print("Commands run:")

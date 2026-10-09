@@ -13,6 +13,9 @@
 # How closely an SV's calls agree is kept as each call's own position and length,
 # plus the SV's start_spread and length_spread (max - min across its calls, in bp),
 # so the matching can later be made stricter without rerunning Jasmine.
+#
+# An SV's pos, end_pos, and svlen are those of the call Jasmine kept, and
+# gnomad_id and gnomad_af are those of the matching gnomAD record, if any.
 import shlex
 import sqlite3
 from pathlib import Path
@@ -22,9 +25,13 @@ CREATE TABLE svs (
     sv_id INTEGER PRIMARY KEY,
     chrom TEXT,
     pos INTEGER,
+    end_pos INTEGER,
     svtype TEXT,
+    svlen INTEGER,
     start_spread INTEGER,
-    length_spread INTEGER
+    length_spread INTEGER,
+    gnomad_id TEXT,
+    gnomad_af REAL
 );
 CREATE TABLE calls (
     call_id INTEGER PRIMARY KEY,
@@ -77,15 +84,16 @@ def _int_or_none(value):
         return None
 
 
-# For each record in Jasmine's merged VCF, yield (chrom, pos, svtype, members),
-# where members lists the (input index, call ID) pairs merged into it. SUPP_VEC
-# has one digit per input VCF, in file_list order, and IDLIST names the merged
-# calls in that same order.
+# For each record in Jasmine's merged VCF, yield (chrom, pos, end_pos, svtype,
+# svlen, members), where members lists the (input index, call ID) pairs merged
+# into it. SUPP_VEC has one digit per input VCF, in file_list order, and IDLIST
+# names the merged calls in that same order.
 def read_jasmine_groups(merged_vcf):
     for _id, chrom, pos, info, _fmt in read_vcf_records(merged_vcf):
         inputs = [i for i, bit in enumerate(info["SUPP_VEC"]) if bit == "1"]
         members = list(zip(inputs, info["IDLIST"].split(",")))
-        yield chrom, pos, info.get("SVTYPE"), members
+        yield (chrom, pos, _int_or_none(info.get("END")), info.get("SVTYPE"),
+               _int_or_none(info.get("SVLEN")), members)
 
 
 # Write the database to db_path, replacing any earlier one. inputs lists
@@ -107,7 +115,7 @@ def write_database(merged_vcf, inputs, db_path, commands):
             [(sample, tool, shlex.join(cmd)) for sample, tool, cmd in commands],
         )
 
-        for sv_id, (chrom, pos, svtype, members) in enumerate(
+        for sv_id, (chrom, pos, end_pos, svtype, svlen, members) in enumerate(
             read_jasmine_groups(merged_vcf), start=1
         ):
             calls = []
@@ -125,9 +133,9 @@ def write_database(merged_vcf, inputs, db_path, commands):
             starts = [call[5] for call in calls]
             lengths = [abs(call[8]) for call in calls if call[8] is not None]
             db.execute(
-                "INSERT INTO svs (sv_id, chrom, pos, svtype, start_spread, length_spread)"
-                " VALUES (?, ?, ?, ?, ?, ?)",
-                (sv_id, chrom, pos, svtype, max(starts) - min(starts),
+                "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype, svlen, start_spread,"
+                " length_spread) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (sv_id, chrom, pos, end_pos, svtype, svlen, max(starts) - min(starts),
                  max(lengths) - min(lengths) if lengths else None),
             )
             db.executemany(

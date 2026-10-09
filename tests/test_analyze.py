@@ -103,7 +103,8 @@ def test_run_aborts_when_reference_incompatible(tmp_path):
     write_fai(f"{reference_path}.fai", contigs)
 
     args = SimpleNamespace(
-        samples=[TEST_BAM], reference=reference_path, output=tmp_path / "results", vcf_dir=None
+        samples=[TEST_BAM], reference=reference_path, output=tmp_path / "results", vcf_dir=None,
+        gnomad=None,
     )
 
     with pytest.raises(SystemExit):

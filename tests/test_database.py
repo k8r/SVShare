@@ -26,10 +26,11 @@ def write_inputs(tmp_path):
     ])
     merged = write_vcf(tmp_path / "merged.vcf", [
         ["chr1", 1000, "0_Sniffles2.DEL.1", "N", "<DEL>", ".", "PASS",
-         "SVTYPE=DEL;SUPP_VEC=11;SUPP=2;IDLIST=Sniffles2.DEL.1,cuteSV.DEL.0",
+         "SVTYPE=DEL;SVLEN=-150;END=1150;SUPP_VEC=11;SUPP=2;IDLIST=Sniffles2.DEL.1,cuteSV.DEL.0",
          "GT", "0/1"],
         ["chr2", 5000, "1_cuteSV.INS.0", "N", "<INS>", ".", "PASS",
-         "SVTYPE=INS;SUPP_VEC=01;SUPP=1;IDLIST=cuteSV.INS.0", "GT", "0/1"],
+         "SVTYPE=INS;SVLEN=300;END=5000;SUPP_VEC=01;SUPP=1;IDLIST=cuteSV.INS.0",
+         "GT", "0/1"],
     ])
     inputs = [("HG002", "sniffles2", sniffles), ("HG003", "cutesv", cutesv)]
     return merged, inputs
@@ -40,14 +41,17 @@ def write_test_database(tmp_path):
     return write_database(merged, inputs, tmp_path / "svshare.db", [])
 
 
-# Checks that each Jasmine record becomes one SV, with how far apart its calls'
-# starts and lengths are.
+# Checks that each Jasmine record becomes one SV, with the kept call's end and
+# length and how far apart its calls' starts and lengths are.
 def test_write_database_has_one_sv_per_jasmine_record(tmp_path):
     db = sqlite3.connect(write_test_database(tmp_path))
 
-    assert db.execute("SELECT * FROM svs ORDER BY sv_id").fetchall() == [
-        (1, "chr1", 1000, "DEL", 10, 10),
-        (2, "chr2", 5000, "INS", 0, 0),
+    assert db.execute(
+        "SELECT sv_id, chrom, pos, end_pos, svtype, svlen, start_spread, length_spread"
+        " FROM svs ORDER BY sv_id"
+    ).fetchall() == [
+        (1, "chr1", 1000, 1150, "DEL", -150, 10, 10),
+        (2, "chr2", 5000, 5000, "INS", 300, 0, 0),
     ]
 
 

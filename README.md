@@ -42,8 +42,11 @@ Run SVShare as a module from the repo root with `python3 -m svshare`.
 python3 -m svshare analyze \
   --samples sample1.bam sample2.bam sample3.bam \
   --reference GRCh38.fa \
-  --output results/
+  --output results/ \
+  --gnomad gnomad.v4.1.sv.sites.vcf.gz
 ```
+
+`--gnomad` is optional. It's the gnomAD v4.1 SV sites VCF, which you download yourself from the [gnomAD downloads page](https://gnomad.broadinstitute.org/downloads) along with its `.tbi` index, kept in the same directory. Without it, SVs aren't looked up in gnomAD.
 
 ### Filter
 
