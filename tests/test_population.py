@@ -4,25 +4,26 @@ import pysam
 import pytest
 
 from svshare.database import SCHEMA
-from svshare.population import add_gnomad_frequencies, best_match
+from svshare.population import add_population_frequencies, best_match
 
+# SVLEN is declared Number=1 in gnomAD and Number=. in CoLoRSdb.
 HEADER = """##fileformat=VCFv4.2
 ##contig=<ID=chr1,length=100000>
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FILTER=<ID=UNRESOLVED,Description="Variant is unresolved">
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
-##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="SV length">
+##INFO=<ID=SVLEN,Number={svlen_number},Type=Integer,Description="SV length">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the structural variant">
 ##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
 """
 
 
-# A gnomAD-style sites VCF, compressed and indexed like the real one, with
+# A population sites VCF, compressed and indexed like the real ones, with
 # (id, pos, filter, svtype, end, svlen, af) records on chr1.
-def write_gnomad(tmp_path, records):
-    path = tmp_path / "gnomad.vcf"
-    path.write_text(HEADER + "".join(
+def write_population_vcf(tmp_path, records, svlen_number="1"):
+    path = tmp_path / "population.vcf"
+    path.write_text(HEADER.format(svlen_number=svlen_number) + "".join(
         f"chr1\t{pos}\t{id_}\tN\t<{svtype}>\t.\t{filter_}\t"
         f"SVTYPE={svtype};END={end};SVLEN={svlen};AF={af}\n"
         # Indexing needs the records in position order.
@@ -35,7 +36,7 @@ def write_gnomad(tmp_path, records):
 # Checks that of the nearby PASS deletions, the one with the highest frequency
 # wins, and that records too far away, of another type, or not PASS are ignored.
 def test_best_match_takes_highest_frequency_among_nearby_matches(tmp_path):
-    gnomad = write_gnomad(tmp_path, [
+    gnomad = write_population_vcf(tmp_path, [
         ("near_rare", 1010, "PASS", "DEL", 1160, 150, 0.01),
         ("near_common", 1040, "PASS", "DEL", 1190, 150, 0.2),
         ("not_pass", 1000, "UNRESOLVED", "DEL", 1150, 150, 0.5),
@@ -51,15 +52,27 @@ def test_best_match_takes_highest_frequency_among_nearby_matches(tmp_path):
 # Checks that a long-read insertion matches a short-read duplication of the same
 # sequence, which starts at the insertion and spans its length.
 def test_best_match_matches_insertion_to_duplication(tmp_path):
-    gnomad = write_gnomad(tmp_path, [("dup", 5000, "PASS", "DUP", 5300, 300, 0.05)])
+    gnomad = write_population_vcf(tmp_path, [("dup", 5000, "PASS", "DUP", 5300, 300, 0.05)])
 
     assert best_match(gnomad, "chr1", 5000, 5000, "INS", 300)[0] == "dup"
 
 
-# Checks that matched SVs get gnomAD's ID and frequency, and that the rest,
+# Checks that CoLoRSdb-style records, which have no FILTER or ID and declare
+# SVLEN as a list, still match, labeled by position and type.
+def test_best_match_accepts_records_without_filter_or_id(tmp_path):
+    colorsdb = write_population_vcf(
+        tmp_path, [(".", 1000, ".", "DEL", 1150, -150, 0.3)], svlen_number="."
+    )
+
+    match_id, af = best_match(colorsdb, "chr1", 1000, 1150, "DEL", -150)
+    assert match_id == "chr1:1000:DEL"
+    assert af == pytest.approx(0.3)
+
+
+# Checks that matched SVs get the dataset's ID and frequency, and that the rest,
 # including a BND, which isn't looked up, are left NULL.
-def test_add_gnomad_frequencies_fills_matched_svs_only(tmp_path):
-    write_gnomad(tmp_path, [("del", 1000, "PASS", "DEL", 1150, 150, 0.25)])
+def test_add_population_frequencies_fills_matched_svs_only(tmp_path):
+    write_population_vcf(tmp_path, [("del", 1000, "PASS", "DEL", 1150, 150, 0.25)])
     db_path = tmp_path / "svshare.db"
     with sqlite3.connect(db_path) as db:
         db.executescript(SCHEMA)
@@ -71,7 +84,7 @@ def test_add_gnomad_frequencies_fills_matched_svs_only(tmp_path):
         )
     db.close()
 
-    assert add_gnomad_frequencies(db_path, tmp_path / "gnomad.vcf.gz") == (1, 3)
+    assert add_population_frequencies(db_path, "gnomad", tmp_path / "population.vcf.gz") == (1, 3)
     rows = sqlite3.connect(db_path).execute(
         "SELECT sv_id, gnomad_id, gnomad_af FROM svs ORDER BY sv_id"
     ).fetchall()

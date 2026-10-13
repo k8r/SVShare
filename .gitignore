@@ -3,6 +3,7 @@ my_notes.txt
 DevData/human_GRCh38_no_alt_analysis_set.fasta
 DevData/human_GRCh38_no_alt_analysis_set.fasta.fai
 DevData/gnomad/
+DevData/colorsdb/
 
 # Analysis output
 results/

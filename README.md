@@ -20,7 +20,7 @@ SVShare is organized into three main stages: **Analyze**, **Filter**, and **Repo
 1. **Provide BAM or CRAM files** for each sample.
 2. **Run Sniffles2 and cuteSV** on each sample to identify structural variants.
 3. **Use Jasmine to group calls of the same SV** across both callers and all samples, and save the results in a SQLite database.
-4. **Compare shared structural variants against gnomAD** to determine how common or rare they are in the population.
+4. **Compare structural variants against gnomAD and CoLoRSdb** to determine how common or rare they are in the population.
 5. **Use BEDTools with gene annotations** to identify affected genes and genomic regions.
 6. **Save the complete analysis results.**
 
@@ -34,7 +34,7 @@ Generate a formatted report from either the complete or filtered SVShare results
 
 ## Command-Line Interface
 
-Run SVShare as a module from the repo root with `python3 -m svshare`.
+Run SVShare from the repo root as `python3 -m svshare <command> [options]`, where the command is `analyze`, `filter`, or `report`.
 
 ### Analyze
 
@@ -43,10 +43,14 @@ python3 -m svshare analyze \
   --samples sample1.bam sample2.bam sample3.bam \
   --reference GRCh38.fa \
   --output results/ \
-  --gnomad gnomad.v4.1.sv.sites.vcf.gz
+  --gnomad gnomad.v4.1.sv.sites.vcf.gz \
+  --colorsdb CoLoRSdb.GRCh38.v1.2.0.pbsv.jasmine.vcf.gz
 ```
 
-`--gnomad` is optional. It's the gnomAD v4.1 SV sites VCF, which you download yourself from the [gnomAD downloads page](https://gnomad.broadinstitute.org/downloads) along with its `.tbi` index, kept in the same directory. Without it, SVs aren't looked up in gnomAD.
+`--gnomad` and `--colorsdb` are recommended population datasets for looking up how common each SV is. If you leave one out, SVs aren't looked up in that dataset, and with neither, SVs can't be filtered by how common they are. Download each with its `.tbi` index, kept in the same directory.
+
+- `--gnomad`: the gnomAD v4.1 SV sites VCF, from the [gnomAD downloads page](https://gnomad.broadinstitute.org/downloads).
+- `--colorsdb`: the CoLoRSdb GRCh38 `pbsv.jasmine` VCF, from [CoLoRSdb v1.2.0 on Zenodo](https://zenodo.org/records/14814308). It's built from long reads, so it includes SVs that gnomAD's short reads miss, such as many insertions and SVs in repetitive regions.
 
 ### Filter
 

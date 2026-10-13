@@ -6,7 +6,7 @@ from pathlib import Path
 from .callers import CALLERS, caller_vcf_path
 from .database import write_database
 from .merging import run_jasmine
-from .population import add_gnomad_frequencies
+from .population import DATASETS, add_population_frequencies
 from .reference import check_bam_reference_compatibility, ensure_reference_index
 
 # Jasmine's merge of every VCF from every sample across callers.
@@ -24,6 +24,8 @@ def run(args):
         args.vcf_dir = args.vcf_dir.absolute()
     if args.gnomad:
         args.gnomad = args.gnomad.absolute()
+    if args.colorsdb:
+        args.colorsdb = args.colorsdb.absolute()
 
     ensure_reference_index(args.reference)
 
@@ -66,12 +68,15 @@ def run(args):
     run_commands.append((None, "jasmine", merge_cmd))
     db_path = write_database(merged_vcf, inputs, args.output / DATABASE, run_commands)
 
-    if args.gnomad:
-        print("\nLooking up SVs in gnomAD")
-        matched, total = add_gnomad_frequencies(db_path, args.gnomad)
-        print(f"  {matched} of {total} SVs found in gnomAD")
-    else:
-        print("\nNo --gnomad file given, so SVs weren't looked up in gnomAD")
+    population_vcfs = {"gnomad": args.gnomad, "colorsdb": args.colorsdb}
+    for dataset, vcf in population_vcfs.items():
+        name = DATASETS[dataset]
+        if vcf:
+            print(f"\nLooking up SVs in {name}")
+            matched, total = add_population_frequencies(db_path, dataset, vcf)
+            print(f"  {matched} of {total} SVs found in {name}")
+        else:
+            print(f"\nNo --{dataset} file given, so SVs weren't looked up in {name}")
 
     print_summary(args, commands, merge_cmd)
 
@@ -90,6 +95,8 @@ def print_summary(args, commands, merge_cmd):
         print(f"Existing caller VCFs from: {args.vcf_dir}")
     if args.gnomad:
         print(f"gnomAD: {args.gnomad}")
+    if args.colorsdb:
+        print(f"CoLoRSdb: {args.colorsdb}")
 
     print()
     print("Commands run:")

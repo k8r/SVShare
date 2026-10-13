@@ -14,8 +14,9 @@
 # plus the SV's start_spread and length_spread (max - min across its calls, in bp),
 # so the matching can later be made stricter without rerunning Jasmine.
 #
-# An SV's pos, end_pos, and svlen are those of the call Jasmine kept, and
-# gnomad_id and gnomad_af are those of the matching gnomAD record, if any.
+# An SV's pos, end_pos, and svlen are those of the call Jasmine kept. The
+# gnomad_ and colorsdb_ columns hold the ID and allele frequency of the matching
+# gnomAD and CoLoRSdb record, if any.
 import shlex
 import sqlite3
 from pathlib import Path
@@ -31,7 +32,9 @@ CREATE TABLE svs (
     start_spread INTEGER,
     length_spread INTEGER,
     gnomad_id TEXT,
-    gnomad_af REAL
+    gnomad_af REAL,
+    colorsdb_id TEXT,
+    colorsdb_af REAL
 );
 CREATE TABLE calls (
     call_id INTEGER PRIMARY KEY,

@@ -35,6 +35,11 @@ def build_parser():
         help="gnomAD SV sites VCF (.vcf.gz with its .tbi index) to look up how common "
         "each SV is in the population. Without it, the lookup is skipped.",
     )
+    analyze_parser.add_argument(
+        "--colorsdb", type=Path, default=None,
+        help="CoLoRSdb SV VCF (.vcf.gz with its .tbi index), a long-read population "
+        "dataset, to look up how common each SV is. Without it, the lookup is skipped.",
+    )
     # Development only (hidden from --help): reuse caller VCFs from an earlier run,
     # named <sample>.sniffles2.vcf and <sample>.cutesv.vcf, instead of rerunning the callers.
     analyze_parser.add_argument(

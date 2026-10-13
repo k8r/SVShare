@@ -1,9 +1,13 @@
-# Look up each SV in a population SV dataset, such as gnomAD, to see how common
-# it is. A record matches an SV when it's a compatible type and close enough.
+# Look up each SV in population SV datasets, gnomAD and CoLoRSdb, to see how
+# common it is. A record matches an SV when it's a compatible type and close enough.
 import math
 import sqlite3
 
 import pysam
+
+# The population datasets SVs can be looked up in, by the prefix of their
+# columns in the svs table (e.g. gnomad_af), with the name to show for each.
+DATASETS = {"gnomad": "gnomAD", "colorsdb": "CoLoRSdb"}
 
 # How far apart (in bp) a record and an SV can be to count as the same SV:
 # MAX_DIST_LINEAR times the SV's length, but at least MIN_DIST.
@@ -34,9 +38,13 @@ def max_distance(svlen):
     return max(MAX_DIST_LINEAR * abs(svlen or 0), MIN_DIST)
 
 
-# Return (id, af) of the PASS record in the VCF that matches the SV, taking the
-# highest allele frequency if several do (the closest, if tied), or None if none
-# do.
+# The value of an INFO field that some VCFs declare as a list (one per ALT).
+def _first(value):
+    return value[0] if isinstance(value, tuple) else value
+
+
+# Return (id, af) of the VCF record matching the SV with the highest allele
+# frequency, or None if no record matches.
 def best_match(vcf, chrom, pos, end, svtype, svlen):
     if svtype not in COMPATIBLE_TYPES or chrom not in vcf.header.contigs:
         return None
@@ -47,32 +55,39 @@ def best_match(vcf, chrom, pos, end, svtype, svlen):
     # A matching record starts within limit bp of the SV; fetch takes 0-based starts.
     for record in vcf.fetch(chrom, max(0, pos - 1 - int(limit)), pos + int(limit)):
         record_type = record.info.get("SVTYPE")
-        if list(record.filter) != ["PASS"] or record_type not in COMPATIBLE_TYPES[svtype]:
+        # FILTER is PASS in gnomAD and empty in CoLoRSdb, which doesn't filter.
+        if set(record.filter.keys()) - {"PASS"} or record_type not in COMPATIBLE_TYPES[svtype]:
             continue
-        af = record.info.get("AF")
-        if isinstance(af, tuple):
-            af = af[0]
+        af = _first(record.info.get("AF"))
         if af is None:
             continue
         distance = math.dist(
-            point, sv_point(record_type, record.pos, record.stop, record.info.get("SVLEN"))
+            point,
+            sv_point(record_type, record.pos, record.stop, _first(record.info.get("SVLEN"))),
         )
         if distance <= limit and (best is None or (af, -distance) > (best[1], -best[2])):
-            best = (record.id, af, distance)
+            # CoLoRSdb records have no ID, so label those by position and type.
+            record_id = record.id or f"{record.chrom}:{record.pos}:{record_type}"
+            best = (record_id, af, distance)
     return best[:2] if best else None
 
 
-# Fill in gnomad_id and gnomad_af for every SV in the database from a gnomAD
-# SV sites VCF, which needs its .tbi index next to it.
+# Look up each SV in the database in a population dataset and save the matching
+# record's ID and allele frequency, e.g. in gnomad_id and gnomad_af. dataset is
+# a key of DATASETS, and vcf_path needs its .tbi index next to it.
 # Returns (SVs matched, total SVs).
-def add_gnomad_frequencies(db_path, gnomad_vcf):
-    with pysam.VariantFile(str(gnomad_vcf)) as vcf, sqlite3.connect(db_path) as db:
+def add_population_frequencies(db_path, dataset, vcf_path):
+    if dataset not in DATASETS:
+        raise ValueError(f"Unknown population dataset: {dataset}")
+    with pysam.VariantFile(str(vcf_path)) as vcf, sqlite3.connect(db_path) as db:
         svs = db.execute("SELECT sv_id, chrom, pos, end_pos, svtype, svlen FROM svs").fetchall()
         matches = []
         for sv_id, *sv in svs:
             match = best_match(vcf, *sv)
             if match:
                 matches.append((*match, sv_id))
-        db.executemany("UPDATE svs SET gnomad_id = ?, gnomad_af = ? WHERE sv_id = ?", matches)
+        db.executemany(
+            f"UPDATE svs SET {dataset}_id = ?, {dataset}_af = ? WHERE sv_id = ?", matches
+        )
     db.close()
     return len(matches), len(svs)
