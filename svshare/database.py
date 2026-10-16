@@ -7,6 +7,12 @@
 #
 #   svs              one row per SV Jasmine identified
 #   calls            one row per original call, linked to its SV by sv_id
+#   transcripts      one row per transcript near any SV, with its gene, type,
+#                    and whether it's its gene's MANE Select transcript
+#   sv_transcript_parts
+#                    one row per part of a transcript (CDS, start or stop codon,
+#                    UTR, exon, intron, or promoter) near an SV, with its exon or intron number, its
+#                    position, and whether the SV overlaps it
 #   commands         every third-party command run, in order, with the tool
 #                    and the sample it was run on, if applicable
 #
@@ -53,6 +59,26 @@ CREATE TABLE calls (
 CREATE INDEX calls_sv_id ON calls(sv_id);
 CREATE INDEX calls_sample ON calls(sample);
 CREATE INDEX calls_read_support ON calls(read_support);
+CREATE TABLE transcripts (
+    transcript_id TEXT PRIMARY KEY,
+    gene_name TEXT NOT NULL,
+    gene_id TEXT NOT NULL,
+    transcript_type TEXT NOT NULL,
+    mane_select INTEGER NOT NULL,
+    chrom TEXT NOT NULL,
+    strand TEXT NOT NULL
+);
+CREATE INDEX transcripts_gene_name ON transcripts(gene_name);
+CREATE TABLE sv_transcript_parts (
+    sv_id INTEGER NOT NULL REFERENCES svs(sv_id),
+    transcript_id TEXT NOT NULL REFERENCES transcripts(transcript_id),
+    region TEXT NOT NULL,
+    number INTEGER,
+    pos INTEGER NOT NULL,
+    end_pos INTEGER NOT NULL,
+    overlaps_sv INTEGER NOT NULL
+);
+CREATE INDEX sv_transcript_parts_sv_id ON sv_transcript_parts(sv_id);
 CREATE TABLE commands (
     command_id INTEGER PRIMARY KEY,
     sample TEXT,

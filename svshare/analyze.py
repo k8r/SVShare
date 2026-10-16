@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .callers import CALLERS, caller_vcf_path
 from .database import write_database
+from .transcripts import add_sv_transcripts
 from .merging import run_jasmine
 from .population import DATASETS, add_population_frequencies
 from .reference import check_bam_reference_compatibility, ensure_reference_index
@@ -26,6 +27,10 @@ def run(args):
         args.gnomad = args.gnomad.absolute()
     if args.colorsdb:
         args.colorsdb = args.colorsdb.absolute()
+    if args.gencode:
+        args.gencode = args.gencode.absolute()
+    if args.regions_bed:
+        args.regions_bed = args.regions_bed.absolute()
 
     ensure_reference_index(args.reference)
 
@@ -78,13 +83,23 @@ def run(args):
         else:
             print(f"\nNo --{dataset} file given, so SVs weren't looked up in {name}")
 
-    print_summary(args, commands, merge_cmd)
+    gene_command = None
+    if args.gencode:
+        print("\nFinding the genes each SV affects")
+        if args.regions_bed and args.regions_bed.exists():
+            print(f"  using existing transcript regions: {args.regions_bed}")
+        gene_command, affected, total = add_sv_transcripts(
+            db_path, args.gencode, args.output, args.regions_bed
+        )
+        print(f"  {affected} of {total} SVs overlap a gene")
+    else:
+        print("\nNo --gencode file given, so SVs weren't matched to genes")
+
+    print_summary(args, commands, merge_cmd, gene_command)
 
 
-# Print the samples, reference, and output location, then the caller commands
-# run for each sample, and the Jasmine merge, one per line so each can be copied
-# and rerun.
-def print_summary(args, commands, merge_cmd):
+# Print paths and commands, one per line for easy rerunning.
+def print_summary(args, commands, merge_cmd, gene_command):
     print()
     print(f"Analyzed {len(args.samples)} sample(s):")
     for sample in args.samples:
@@ -97,6 +112,8 @@ def print_summary(args, commands, merge_cmd):
         print(f"gnomAD: {args.gnomad}")
     if args.colorsdb:
         print(f"CoLoRSdb: {args.colorsdb}")
+    if args.gencode:
+        print(f"GENCODE: {args.gencode}")
 
     print()
     print("Commands run:")
@@ -111,3 +128,8 @@ def print_summary(args, commands, merge_cmd):
     print()
     print("All samples and callers:")
     print(f"  {shlex.join(merge_cmd)}")
+
+    if gene_command:
+        print()
+        print("Gene lookup:")
+        print(f"  {gene_command}")

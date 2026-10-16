@@ -33,6 +33,10 @@ def run_jasmine(vcfs, out_vcf, out_dir, threads=4):
         f"out_dir={out_dir}",
         f"threads={threads}",
         *(f"{name}={value}" for name, value in JASMINE_SETTINGS.items()),
+        # Without this, Jasmine recalculates each call's END and SVLEN from its
+        # REF and ALT, assuming they start with a padding base. cuteSV's don't,
+        # so its correct values would come out one base short.
+        "--leave_breakpoints",
     ]
     # Bioconda's jasmine launcher is a bash script with no #! line, so it can't be
     # executed directly from Python; run it with bash. The returned cmd stays the

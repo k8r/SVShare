@@ -104,7 +104,7 @@ def test_run_aborts_when_reference_incompatible(tmp_path):
 
     args = SimpleNamespace(
         samples=[TEST_BAM], reference=reference_path, output=tmp_path / "results", vcf_dir=None,
-        gnomad=None, colorsdb=None,
+        gnomad=None, colorsdb=None, gencode=None, regions_bed=None,
     )
 
     with pytest.raises(SystemExit):

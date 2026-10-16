@@ -40,10 +40,21 @@ def build_parser():
         help="CoLoRSdb SV VCF (.vcf.gz with its .tbi index), a long-read population "
         "dataset, to look up how common each SV is. Without it, the lookup is skipped.",
     )
+    analyze_parser.add_argument(
+        "--gencode", type=Path, default=None,
+        help="GENCODE gene annotation GTF (.gtf or .gtf.gz) to find the genes each SV "
+        "affects. Without it, SVs aren't matched to genes.",
+    )
     # Development only (hidden from --help): reuse caller VCFs from an earlier run,
     # named <sample>.sniffles2.vcf and <sample>.cutesv.vcf, instead of rerunning the callers.
     analyze_parser.add_argument(
         "--vcf-dir", type=Path, default=None, help=argparse.SUPPRESS
+    )
+    # Development only (hidden from --help): cache the transcript regions BED that
+    # --gencode builds at this path, reusing it if it exists. Delete it when the GTF
+    # or the region rules in transcripts.py change.
+    analyze_parser.add_argument(
+        "--regions-bed", type=Path, default=None, help=argparse.SUPPRESS
     )
     analyze_parser.set_defaults(func=analyze.run)
 

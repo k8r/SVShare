@@ -44,13 +44,16 @@ python3 -m svshare analyze \
   --reference GRCh38.fa \
   --output results/ \
   --gnomad gnomad.v4.1.sv.sites.vcf.gz \
-  --colorsdb CoLoRSdb.GRCh38.v1.2.0.pbsv.jasmine.vcf.gz
+  --colorsdb CoLoRSdb.GRCh38.v1.2.0.pbsv.jasmine.vcf.gz \
+  --gencode gencode.v50.annotation.gtf.gz
 ```
 
 `--gnomad` and `--colorsdb` are recommended population datasets for looking up how common each SV is. If you leave one out, SVs aren't looked up in that dataset, and with neither, SVs can't be filtered by how common they are. Download each with its `.tbi` index, kept in the same directory.
 
 - `--gnomad`: the gnomAD v4.1 SV sites VCF, from the [gnomAD downloads page](https://gnomad.broadinstitute.org/downloads).
 - `--colorsdb`: the CoLoRSdb GRCh38 `pbsv.jasmine` VCF, from [CoLoRSdb v1.2.0 on Zenodo](https://zenodo.org/records/14814308). It's built from long reads, so it includes SVs that gnomAD's short reads miss, such as many insertions and SVs in repetitive regions.
+
+`--gencode` takes GENCODE's human gene annotation, for finding the genes each SV affects. You can download `gencode.v50.annotation.gtf.gz` from the [GENCODE human releases page](https://www.gencodegenes.org/human/).
 
 ### Filter
 

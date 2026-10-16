@@ -10,5 +10,6 @@ dependencies:
   - sniffles=2.8.0
   - cutesv=1.0.8
   - jasminesv=1.1.5
+  - bedtools=2.31.1
   - pysam=0.24.0
   - pytest
