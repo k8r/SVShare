@@ -13,7 +13,7 @@ conda activate svshare
 
 ## Workflow
 
-SVShare is organized into three main stages: **Analyze**, **Filter**, and **Report**.
+SVShare is organized into two main stages: **Analyze** and **Report**.
 
 ### Analyze
 
@@ -24,17 +24,13 @@ SVShare is organized into three main stages: **Analyze**, **Filter**, and **Repo
 5. **Use BEDTools with gene annotations** to identify affected genes and genomic regions.
 6. **Save the complete analysis results.**
 
-### Filter
-
-SVShare provides default filters to highlight rare structural variants shared across samples. Users can adjust these filters for their own analysis.
-
 ### Report
 
-Generate a formatted report from either the complete or filtered SVShare results.
+Filter the analysis results and write the SVs that pass as an HTML report or a TSV table. SVShare provides default filters to highlight rare structural variants shared across samples. Users can adjust these filters for their own analysis.
 
 ## Command-Line Interface
 
-Run SVShare from the repo root as `python3 -m svshare <command> [options]`, where the command is `analyze`, `filter`, or `report`.
+Run SVShare from the repo root as `python3 -m svshare <command> [options]`, where the command is `analyze` or `report`.
 
 ### Analyze
 
@@ -59,14 +55,21 @@ All three are optional, but recommended.
   - Download `gencode.v50.annotation.gtf.gz` from the [GENCODE human releases page](https://www.gencodegenes.org/human/).
   - Each gene found is also given a readable name from [HGNC](https://www.genenames.org/), a summary of what it does from [NCBI Gene](https://www.ncbi.nlm.nih.gov/gene/), and dosage sensitivity scores from the [ClinGen Dosage Sensitivity Map](https://dosage.clinicalgenome.org/). These come from `svshare/data/gene_info.tsv`, which is included with SVShare; to refresh it, run `python3 scripts/build_gene_info.py`.
 
-### Filter
+### Report
 
-Running `filter` without additional filter options uses the defaults below:
+Running `report` without additional options writes an HTML report of the SVs that pass the default filters below:
 
 ```bash
-python3 -m svshare filter \
+python3 -m svshare report \
   --results results/
 ```
+
+Choose the output with `--format`:
+
+- `html` (default): written to `<results>/report.html`.
+- `tsv`: a table with one row per SV, written to `<results>/report.tsv`.
+
+Pass `--output` to write either one elsewhere. Both include only the SVs that pass the filters.
 
 Available filter options:
 
@@ -83,7 +86,7 @@ Available filter options:
 For longer gene lists, users can provide a text file:
 
 ```bash
-python3 -m svshare filter \
+python3 -m svshare report \
   --results results/ \
   --gene-file genes.txt
 ```
@@ -96,13 +99,3 @@ BRCA2
 TP53
 PALB2
 ```
-
-### Report
-
-```bash
-python3 -m svshare report \
-  --results results/
-```
-
-The report is written to `<results>/report.html` by default; pass `--output`
-to write it elsewhere.

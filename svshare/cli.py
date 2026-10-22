@@ -4,11 +4,11 @@ from pathlib import Path
 
 import svshare
 
-from . import analyze, filtering, reporting
+from . import analyze, reporting
 from .callers import CALLERS
 
 
-# Build the parser with the analyze, filter, and report subcommands.
+# Build the parser with the analyze and report subcommands.
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="svshare",
@@ -58,39 +58,37 @@ def build_parser():
     )
     analyze_parser.set_defaults(func=analyze.run)
 
-    filter_parser = subparsers.add_parser("filter", help="Filter analysis results.")
-    filter_parser.add_argument(
-        "--results", required=True, type=Path, help="Directory containing analyze results."
-    )
-    filter_parser.add_argument(
-        "--caller-support", choices=[*CALLERS, "both", "any"], default="any"
-    )
-    filter_parser.add_argument(
-        "--sv-type", choices=["DEL", "DUP", "INS", "INV", "BND", "any"], default="any"
-    )
-    filter_parser.add_argument("--max-gnomad-frequency", type=float, default=0.01)
-    filter_parser.add_argument("--min-samples", type=int, default=2)
-    filter_parser.add_argument(
-        "--genes", nargs="+", default=None, help="Gene symbols to filter to."
-    )
-    filter_parser.add_argument(
-        "--gene-file", type=Path, default=None,
-        help="Text file of gene symbols, one per line, no header.",
-    )
-    filter_parser.add_argument(
-        "--region", default=None, help="Genomic region to filter to, e.g. chr1:1000-2000."
-    )
-    filter_parser.set_defaults(func=filtering.run)
-
     report_parser = subparsers.add_parser(
-        "report", help="Generate a formatted report from results."
+        "report", help="Filter analysis results and write them as a report."
     )
     report_parser.add_argument(
-        "--results", required=True, type=Path, help="Directory containing analyze or filter results."
+        "--results", required=True, type=Path, help="Directory containing analyze results."
+    )
+    report_parser.add_argument(
+        "--format", choices=["html", "tsv"], default="html",
+        help="html for a report, tsv for a table (default: html).",
     )
     report_parser.add_argument(
         "--output", type=Path, default=None,
-        help="Report file to write (default: <results>/report.html).",
+        help="File to write (default: <results>/report.html or <results>/report.tsv).",
+    )
+    report_parser.add_argument(
+        "--caller-support", choices=[*CALLERS, "both", "any"], default="any"
+    )
+    report_parser.add_argument(
+        "--sv-type", choices=["DEL", "DUP", "INS", "INV", "BND", "any"], default="any"
+    )
+    report_parser.add_argument("--max-gnomad-frequency", type=float, default=0.01)
+    report_parser.add_argument("--min-samples", type=int, default=2)
+    report_parser.add_argument(
+        "--genes", nargs="+", default=None, help="Gene symbols to filter to."
+    )
+    report_parser.add_argument(
+        "--gene-file", type=Path, default=None,
+        help="Text file of gene symbols, one per line, no header.",
+    )
+    report_parser.add_argument(
+        "--region", default=None, help="Genomic region to filter to, e.g. chr1:1000-2000."
     )
     report_parser.set_defaults(func=reporting.run)
 
