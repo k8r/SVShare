@@ -1,5 +1,6 @@
 # `report` subcommand: filter analysis results and write them as HTML or TSV.
-from .filtering import parse_gene_list
+from .analyze import DATABASE
+from .filtering import filter_sv_ids, parse_gene_list
 
 
 def run(args):
@@ -14,4 +15,7 @@ def run(args):
         print(f"  genes: {', '.join(genes)}")
     if args.region:
         print(f"  region: {args.region}")
+
+    sv_ids = filter_sv_ids(args.results / DATABASE, caller_support=args.caller_support)
+    print(f"{len(sv_ids)} SVs pass the filters")
     print(f"Output: {output}")

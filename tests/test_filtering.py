@@ -1,4 +1,7 @@
-from svshare.filtering import parse_gene_list
+import sqlite3
+
+from svshare.database import SCHEMA
+from svshare.filtering import filter_sv_ids, parse_gene_list
 
 
 def test_genes_only():
@@ -28,3 +31,37 @@ def test_gene_file_skips_blank_lines_and_strips_whitespace(tmp_path):
 
 def test_no_genes_or_gene_file_returns_empty_list():
     assert parse_gene_list(None, None) == []
+
+
+# A database with four SVs: 1 called only by sniffles2, 2 only by cuteSV (in two
+# samples), 3 by both in the same sample, and 4 by both in different samples.
+def write_caller_database(tmp_path):
+    db_path = tmp_path / "svshare.db"
+    with sqlite3.connect(db_path) as db:
+        db.executescript(SCHEMA)
+        db.executemany("INSERT INTO svs (sv_id) VALUES (?)", [(1,), (2,), (3,), (4,)])
+        db.executemany(
+            "INSERT INTO calls (sv_id, sample, caller, vcf_id) VALUES (?, ?, ?, ?)",
+            [(1, "HG002", "sniffles2", "a"),
+             (2, "HG002", "cutesv", "b"), (2, "HG003", "cutesv", "c"),
+             (3, "HG002", "sniffles2", "d"), (3, "HG002", "cutesv", "e"),
+             (4, "HG002", "sniffles2", "f"), (4, "HG003", "cutesv", "g")],
+        )
+    db.close()
+    return db_path
+
+
+def test_caller_support_any_keeps_every_sv(tmp_path):
+    assert filter_sv_ids(write_caller_database(tmp_path), caller_support="any") == [1, 2, 3, 4]
+
+
+# Naming one caller keeps SVs the other caller also called.
+def test_caller_support_one_caller_keeps_svs_it_called(tmp_path):
+    db_path = write_caller_database(tmp_path)
+    assert filter_sv_ids(db_path, caller_support="sniffles2") == [1, 3, 4]
+    assert filter_sv_ids(db_path, caller_support="cutesv") == [2, 3, 4]
+
+
+# Both callers count whether they called the SV in the same sample or not.
+def test_caller_support_both_keeps_svs_every_caller_called(tmp_path):
+    assert filter_sv_ids(write_caller_database(tmp_path), caller_support="both") == [3, 4]

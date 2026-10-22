@@ -73,7 +73,9 @@ def build_parser():
         help="File to write (default: <results>/report.html or <results>/report.tsv).",
     )
     report_parser.add_argument(
-        "--caller-support", choices=[*CALLERS, "both", "any"], default="any"
+        "--caller-support", choices=[*CALLERS, "both", "any"], default="any",
+        help="Keep SVs called by this caller (whether or not others also called them), "
+        "by both callers, or by any caller (default: any).",
     )
     report_parser.add_argument(
         "--sv-type", choices=["DEL", "DUP", "INS", "INV", "BND", "any"], default="any"

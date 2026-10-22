@@ -83,6 +83,8 @@ Available filter options:
 --region <genomic-region>
 ```
 
+`--caller-support` keeps SVs called by `sniffles2` or `cutesv` (whether or not the other caller also called them), by `both` callers, or by `any` caller.
+
 For longer gene lists, users can provide a text file:
 
 ```bash
