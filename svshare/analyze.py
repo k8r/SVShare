@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .callers import CALLERS, caller_vcf_path
 from .database import write_database
+from .genes import add_genes
 from .transcripts import add_sv_transcripts
 from .merging import run_jasmine
 from .population import DATASETS, add_population_frequencies
@@ -92,6 +93,9 @@ def run(args):
             db_path, args.gencode, args.output, args.regions_bed
         )
         print(f"  {affected} of {total} SVs overlap a gene")
+        with_summary, with_dosage, genes = add_genes(db_path)
+        print(f"  {genes} genes nearby: {with_summary} with a summary, "
+              f"{with_dosage} with ClinGen dosage scores")
     else:
         print("\nNo --gencode file given, so SVs weren't matched to genes")
 

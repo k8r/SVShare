@@ -48,12 +48,16 @@ python3 -m svshare analyze \
   --gencode gencode.v50.annotation.gtf.gz
 ```
 
-`--gnomad` and `--colorsdb` are recommended population datasets for looking up how common each SV is. If you leave one out, SVs aren't looked up in that dataset, and with neither, SVs can't be filtered by how common they are. Download each with its `.tbi` index, kept in the same directory.
+All three are optional, but recommended.
 
-- `--gnomad`: the gnomAD v4.1 SV sites VCF, from the [gnomAD downloads page](https://gnomad.broadinstitute.org/downloads).
-- `--colorsdb`: the CoLoRSdb GRCh38 `pbsv.jasmine` VCF, from [CoLoRSdb v1.2.0 on Zenodo](https://zenodo.org/records/14814308). It's built from long reads, so it includes SVs that gnomAD's short reads miss, such as many insertions and SVs in repetitive regions.
-
-`--gencode` takes GENCODE's human gene annotation, for finding the genes each SV affects. You can download `gencode.v50.annotation.gtf.gz` from the [GENCODE human releases page](https://www.gencodegenes.org/human/).
+- `--gnomad`: the gnomAD v4.1 SV sites VCF, for looking up how common each SV is.
+  - Download it from the [gnomAD downloads page](https://gnomad.broadinstitute.org/downloads), with its `.tbi` index in the same directory.
+- `--colorsdb`: the CoLoRSdb GRCh38 `pbsv.jasmine` VCF, also for looking up how common each SV is.
+  - Download it from [CoLoRSdb v1.2.0 on Zenodo](https://zenodo.org/records/14814308), with its `.tbi` index in the same directory.
+  - It's built from long reads, so it includes SVs that gnomAD's short reads miss, such as many insertions and SVs in repetitive regions.
+- `--gencode`: GENCODE's human gene annotation, for finding the genes each SV affects.
+  - Download `gencode.v50.annotation.gtf.gz` from the [GENCODE human releases page](https://www.gencodegenes.org/human/).
+  - Each gene found is also given a readable name from [HGNC](https://www.genenames.org/), a summary of what it does from [NCBI Gene](https://www.ncbi.nlm.nih.gov/gene/), and dosage sensitivity scores from the [ClinGen Dosage Sensitivity Map](https://dosage.clinicalgenome.org/). These come from `svshare/data/gene_info.tsv`, which is included with SVShare; to refresh it, run `python3 scripts/build_gene_info.py`.
 
 ### Filter
 

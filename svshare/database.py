@@ -11,8 +11,11 @@
 #                    and whether it's its gene's MANE Select transcript
 #   sv_transcript_parts
 #                    one row per part of a transcript (CDS, start or stop codon,
-#                    UTR, exon, intron, or promoter) near an SV, with its exon or intron number, its
-#                    position, and whether the SV overlaps it
+#                    UTR, exon, intron, or promoter) near an SV, with its exon
+#                    or intron number, its position, and whether the SV overlaps it
+#   genes            one row per gene with a transcript near any SV, with its
+#                    readable name, a summary of what it does, and its ClinGen
+#                    dosage sensitivity scores, where known
 #   commands         every third-party command run, in order, with the tool
 #                    and the sample it was run on, if applicable
 #
@@ -79,6 +82,16 @@ CREATE TABLE sv_transcript_parts (
     overlaps_sv INTEGER NOT NULL
 );
 CREATE INDEX sv_transcript_parts_sv_id ON sv_transcript_parts(sv_id);
+CREATE TABLE genes (
+    gene_id TEXT PRIMARY KEY,
+    hgnc_id TEXT,
+    full_name TEXT,
+    summary TEXT,
+    haploinsufficiency_score INTEGER,
+    haploinsufficiency TEXT,
+    triplosensitivity_score INTEGER,
+    triplosensitivity TEXT
+);
 CREATE TABLE commands (
     command_id INTEGER PRIMARY KEY,
     sample TEXT,
