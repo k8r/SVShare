@@ -33,13 +33,17 @@ def test_no_genes_or_gene_file_returns_empty_list():
     assert parse_gene_list(None, None) == []
 
 
-# A database with four SVs: 1 called only by sniffles2, 2 only by cuteSV (in two
-# samples), 3 by both in the same sample, and 4 by both in different samples.
-def write_caller_database(tmp_path):
+# A database with four SVs: 1, a DEL, called only by sniffles2; 2, an INS, only
+# by cuteSV (in two samples); 3, a DEL, by both in the same sample; and 4, a BND,
+# by both in different samples.
+def write_test_database(tmp_path):
     db_path = tmp_path / "svshare.db"
     with sqlite3.connect(db_path) as db:
         db.executescript(SCHEMA)
-        db.executemany("INSERT INTO svs (sv_id) VALUES (?)", [(1,), (2,), (3,), (4,)])
+        db.executemany(
+            "INSERT INTO svs (sv_id, svtype) VALUES (?, ?)",
+            [(1, "DEL"), (2, "INS"), (3, "DEL"), (4, "BND")],
+        )
         db.executemany(
             "INSERT INTO calls (sv_id, sample, caller, vcf_id) VALUES (?, ?, ?, ?)",
             [(1, "HG002", "sniffles2", "a"),
@@ -52,16 +56,27 @@ def write_caller_database(tmp_path):
 
 
 def test_caller_support_any_keeps_every_sv(tmp_path):
-    assert filter_sv_ids(write_caller_database(tmp_path), caller_support="any") == [1, 2, 3, 4]
+    assert filter_sv_ids(write_test_database(tmp_path), caller_support="any") == [1, 2, 3, 4]
 
 
 # Naming one caller keeps SVs the other caller also called.
 def test_caller_support_one_caller_keeps_svs_it_called(tmp_path):
-    db_path = write_caller_database(tmp_path)
+    db_path = write_test_database(tmp_path)
     assert filter_sv_ids(db_path, caller_support="sniffles2") == [1, 3, 4]
     assert filter_sv_ids(db_path, caller_support="cutesv") == [2, 3, 4]
 
 
 # Both callers count whether they called the SV in the same sample or not.
 def test_caller_support_both_keeps_svs_every_caller_called(tmp_path):
-    assert filter_sv_ids(write_caller_database(tmp_path), caller_support="both") == [3, 4]
+    assert filter_sv_ids(write_test_database(tmp_path), caller_support="both") == [3, 4]
+
+
+def test_sv_type_keeps_svs_of_that_type(tmp_path):
+    db_path = write_test_database(tmp_path)
+    assert filter_sv_ids(db_path, sv_type="any") == [1, 2, 3, 4]
+    assert filter_sv_ids(db_path, sv_type="DEL") == [1, 3]
+    assert filter_sv_ids(db_path, sv_type="DUP") == []
+
+
+def test_filters_combine(tmp_path):
+    assert filter_sv_ids(write_test_database(tmp_path), caller_support="both", sv_type="DEL") == [3]

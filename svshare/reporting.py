@@ -21,6 +21,7 @@ def run(args):
     if args.region:
         print(f"  region: {args.region}")
 
-    sv_ids = filter_sv_ids(args.database, caller_support=args.caller_support)
+    sv_ids = filter_sv_ids(args.database, caller_support=args.caller_support,
+                           sv_type=args.sv_type)
     print(f"{len(sv_ids)} SVs pass the filters")
     print(f"Output: {output}")

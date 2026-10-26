@@ -28,13 +28,20 @@ def _caller_support_condition(caller_support):
     return "sv_id IN (SELECT sv_id FROM calls WHERE caller = ?)", [caller_support]
 
 
+# The --sv-type filter, written in SQL.
+def _sv_type_condition(sv_type):
+    if sv_type == "any":
+        return None
+    return "svtype = ?", [sv_type]
+
+
 # Return the IDs, in order, of the SVs in the database that pass the filters.
-def filter_sv_ids(db_path, caller_support="any"):
+def filter_sv_ids(db_path, caller_support="any", sv_type="any"):
     conditions, params = [], []
-    condition = _caller_support_condition(caller_support)
-    if condition:
-        conditions.append(condition[0])
-        params += condition[1]
+    for condition in (_caller_support_condition(caller_support), _sv_type_condition(sv_type)):
+        if condition:
+            conditions.append(condition[0])
+            params += condition[1]
     where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
     with sqlite3.connect(db_path) as db:
         sv_ids = [sv_id for (sv_id,) in db.execute(f"SELECT sv_id FROM svs{where} ORDER BY sv_id", params)]
