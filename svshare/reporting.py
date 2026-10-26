@@ -14,7 +14,7 @@ def run(args):
     print(f"Reporting on {args.database}")
     print(f"  caller-support: {args.caller_support}")
     print(f"  sv-type: {args.sv_type}")
-    print(f"  max-gnomad-frequency: {args.max_gnomad_frequency}")
+    print(f"  max-frequency: {args.max_frequency}")
     print(f"  min-samples: {args.min_samples}")
     if genes:
         print(f"  genes: {', '.join(genes)}")
@@ -22,6 +22,6 @@ def run(args):
         print(f"  region: {args.region}")
 
     sv_ids = filter_sv_ids(args.database, caller_support=args.caller_support,
-                           sv_type=args.sv_type)
+                           sv_type=args.sv_type, max_frequency=args.max_frequency)
     print(f"{len(sv_ids)} SVs pass the filters")
     print(f"Output: {output}")

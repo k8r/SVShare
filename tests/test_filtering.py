@@ -33,16 +33,20 @@ def test_no_genes_or_gene_file_returns_empty_list():
     assert parse_gene_list(None, None) == []
 
 
-# A database with four SVs: 1, a DEL, called only by sniffles2; 2, an INS, only
-# by cuteSV (in two samples); 3, a DEL, by both in the same sample; and 4, a BND,
-# by both in different samples.
+# A database with four SVs:
+#   1  a DEL called only by sniffles2, in neither population database
+#   2  an INS called only by cuteSV (in two samples), at 1% in gnomAD
+#   3  a DEL called by both callers in the same sample, at 20% in CoLoRSdb
+#   4  a BND called by both callers in different samples, at 2% in gnomAD and
+#      0.1% in CoLoRSdb
 def write_test_database(tmp_path):
     db_path = tmp_path / "svshare.db"
     with sqlite3.connect(db_path) as db:
         db.executescript(SCHEMA)
         db.executemany(
-            "INSERT INTO svs (sv_id, svtype) VALUES (?, ?)",
-            [(1, "DEL"), (2, "INS"), (3, "DEL"), (4, "BND")],
+            "INSERT INTO svs (sv_id, svtype, gnomad_af, colorsdb_af) VALUES (?, ?, ?, ?)",
+            [(1, "DEL", None, None), (2, "INS", 0.01, None), (3, "DEL", None, 0.2),
+             (4, "BND", 0.02, 0.001)],
         )
         db.executemany(
             "INSERT INTO calls (sv_id, sample, caller, vcf_id) VALUES (?, ?, ?, ?)",
@@ -80,3 +84,12 @@ def test_sv_type_keeps_svs_of_that_type(tmp_path):
 
 def test_filters_combine(tmp_path):
     assert filter_sv_ids(write_test_database(tmp_path), caller_support="both", sv_type="DEL") == [3]
+
+
+# An SV passes if it's at most the frequency in every database that has a match
+# for it, so 1 (no match) and 2 (exactly 1%) pass, and 3 and 4 (common in one
+# database) don't.
+def test_max_frequency_keeps_svs_rare_in_every_database(tmp_path):
+    db_path = write_test_database(tmp_path)
+    assert filter_sv_ids(db_path, max_frequency=None) == [1, 2, 3, 4]
+    assert filter_sv_ids(db_path, max_frequency=0.01) == [1, 2]

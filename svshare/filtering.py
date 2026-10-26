@@ -2,6 +2,7 @@
 import sqlite3
 
 from .callers import CALLERS
+from .population import DATASETS
 
 
 # Combine --genes values and --gene-file lines into a sorted, deduplicated list.
@@ -35,10 +36,25 @@ def _sv_type_condition(sv_type):
     return "svtype = ?", [sv_type]
 
 
+# The --max-frequency filter, written in SQL. An SV passes if, in each
+# population database, its frequency is at most max_frequency or it isn't found there.
+def _max_frequency_condition(max_frequency):
+    if max_frequency is None:
+        return None
+    return (
+        " AND ".join(f"({dataset}_af IS NULL OR {dataset}_af <= ?)" for dataset in DATASETS),
+        [max_frequency] * len(DATASETS),
+    )
+
+
 # Return the IDs, in order, of the SVs in the database that pass the filters.
-def filter_sv_ids(db_path, caller_support="any", sv_type="any"):
+def filter_sv_ids(db_path, caller_support="any", sv_type="any", max_frequency=None):
     conditions, params = [], []
-    for condition in (_caller_support_condition(caller_support), _sv_type_condition(sv_type)):
+    for condition in (
+        _caller_support_condition(caller_support),
+        _sv_type_condition(sv_type),
+        _max_frequency_condition(max_frequency),
+    ):
         if condition:
             conditions.append(condition[0])
             params += condition[1]

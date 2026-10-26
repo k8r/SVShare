@@ -75,7 +75,7 @@ Available filter options:
 ```text
 --caller-support {both,sniffles2,cutesv,any}   Default: any
 --sv-type {DEL,DUP,INS,INV,BND,any}            Default: any
---max-gnomad-frequency <number>                Default: 0.01
+--max-frequency <number>                       Default: 0.01
 --min-samples <number>                         Default: 2
 --genes <gene1>,<gene2>,...
 --gene-file <file>
@@ -83,6 +83,10 @@ Available filter options:
 ```
 
 `--caller-support` keeps SVs called by `sniffles2` or `cutesv` (whether or not the other caller also called them), by `both` callers, or by `any` caller.
+
+`--max-frequency` filters SVs by how common they are. An SV's allele frequency in gnomAD or CoLoRSdb is the fraction of chromosomes in that database's population that carry it, from 0 to 1. An SV passes if, in each database, its frequency is at most `--max-frequency` or it isn't found there.
+
+`--genes` keeps SVs that affect at least one of the listed genes.
 
 For longer gene lists, users can provide a text file:
 
