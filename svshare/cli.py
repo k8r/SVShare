@@ -8,6 +8,11 @@ from . import analyze, reporting
 from .callers import CALLERS
 
 
+# Split a comma-separated value into a list, ignoring spaces and empty items.
+def _comma_separated(value):
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
 # Build the parser with the analyze and report subcommands.
 def build_parser():
     parser = argparse.ArgumentParser(
@@ -62,7 +67,7 @@ def build_parser():
         "report", help="Filter analysis results and write them as a report."
     )
     report_parser.add_argument(
-        "--results", required=True, type=Path, help="Directory containing analyze results."
+        "database", type=Path, help="Database analyze wrote, e.g. results/svshare.db."
     )
     report_parser.add_argument(
         "--format", choices=["html", "tsv"], default="html",
@@ -70,7 +75,7 @@ def build_parser():
     )
     report_parser.add_argument(
         "--output", type=Path, default=None,
-        help="File to write (default: <results>/report.html or <results>/report.tsv).",
+        help="File to write (default: report.html or report.tsv next to the database).",
     )
     report_parser.add_argument(
         "--caller-support", choices=[*CALLERS, "both", "any"], default="any",
@@ -83,7 +88,8 @@ def build_parser():
     report_parser.add_argument("--max-gnomad-frequency", type=float, default=0.01)
     report_parser.add_argument("--min-samples", type=int, default=2)
     report_parser.add_argument(
-        "--genes", nargs="+", default=None, help="Gene symbols to filter to."
+        "--genes", type=_comma_separated, default=None,
+        help="Comma-separated gene symbols to filter to, e.g. TP53,BRCA1."
     )
     report_parser.add_argument(
         "--gene-file", type=Path, default=None,

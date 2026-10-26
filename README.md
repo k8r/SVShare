@@ -57,19 +57,18 @@ All three are optional, but recommended.
 
 ### Report
 
-Running `report` without additional options writes an HTML report of the SVs that pass the default filters below:
+`report` takes the database `analyze` wrote. Without additional options, it writes an HTML report of the SVs that pass the default filters below:
 
 ```bash
-python3 -m svshare report \
-  --results results/
+python3 -m svshare report results/svshare.db
 ```
 
 Choose the output with `--format`:
 
-- `html` (default): written to `<results>/report.html`.
-- `tsv`: a table with one row per SV, written to `<results>/report.tsv`.
+- `html` (default): written to `report.html` next to the database.
+- `tsv`: a table with one row per SV, written to `report.tsv` next to the database.
 
-Pass `--output` to write either one elsewhere. Both include only the SVs that pass the filters.
+Pass `--output` to name the report or write it elsewhere, e.g. to keep reports made with different filters.
 
 Available filter options:
 
@@ -78,7 +77,7 @@ Available filter options:
 --sv-type {DEL,DUP,INS,INV,BND,any}            Default: any
 --max-gnomad-frequency <number>                Default: 0.01
 --min-samples <number>                         Default: 2
---genes <gene1> <gene2> ...
+--genes <gene1>,<gene2>,...
 --gene-file <file>
 --region <genomic-region>
 ```
@@ -88,8 +87,7 @@ Available filter options:
 For longer gene lists, users can provide a text file:
 
 ```bash
-python3 -m svshare report \
-  --results results/ \
+python3 -m svshare report results/svshare.db \
   --gene-file genes.txt
 ```
 
