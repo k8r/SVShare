@@ -79,8 +79,8 @@ def build_parser():
     )
     report_parser.add_argument(
         "--caller-support", choices=[*CALLERS, "both", "any"], default="any",
-        help="Keep SVs called by this caller (whether or not others also called them), "
-        "by both callers, or by any caller (default: any).",
+        help="Which callers must call an SV in a sample for that sample to count "
+        "toward --min-samples (default: any).",
     )
     report_parser.add_argument(
         "--sv-type", choices=["DEL", "DUP", "INS", "INV", "BND", "any"], default="any"
@@ -90,7 +90,10 @@ def build_parser():
         help="Keep SVs whose allele frequency (0 to 1) in each of gnomAD and CoLoRSdb "
         "is at most this, or that aren't found there (default: 0.01).",
     )
-    report_parser.add_argument("--min-samples", type=int, default=2)
+    report_parser.add_argument(
+        "--min-samples", type=int, default=2,
+        help="Keep SVs that meet --caller-support in at least this many samples (default: 2).",
+    )
     report_parser.add_argument(
         "--genes", type=_comma_separated, default=None,
         help="Comma-separated gene symbols to filter to, e.g. TP53,BRCA1."

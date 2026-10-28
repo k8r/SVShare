@@ -14,19 +14,24 @@ def parse_gene_list(genes, gene_file):
     return sorted(gene_set)
 
 
-# The --caller-support filter, written in SQL. A caller counts as calling an SV
-# if it called it in any sample, and naming one caller also keeps SVs other
-# callers called.
-def _caller_support_condition(caller_support):
+# The --caller-support and --min-samples filters, written in SQL. An SV passes
+# if it meets caller_support in at least min_samples samples. Naming one caller
+# also keeps SVs other callers called.
+def _sample_support_condition(caller_support, min_samples):
     if caller_support == "any":
-        return None
-    if caller_support == "both":
-        return (
-            "sv_id IN (SELECT sv_id FROM calls GROUP BY sv_id"
-            " HAVING COUNT(DISTINCT caller) = ?)",
-            [len(CALLERS)],
-        )
-    return "sv_id IN (SELECT sv_id FROM calls WHERE caller = ?)", [caller_support]
+        samples = "SELECT sv_id, sample FROM calls GROUP BY sv_id, sample"
+        params = []
+    elif caller_support == "both":
+        samples = ("SELECT sv_id, sample FROM calls GROUP BY sv_id, sample"
+                   " HAVING COUNT(DISTINCT caller) = ?")
+        params = [len(CALLERS)]
+    else:
+        samples = "SELECT sv_id, sample FROM calls WHERE caller = ? GROUP BY sv_id, sample"
+        params = [caller_support]
+    return (
+        f"sv_id IN (SELECT sv_id FROM ({samples}) GROUP BY sv_id HAVING COUNT(*) >= ?)",
+        params + [min_samples],
+    )
 
 
 # The --sv-type filter, written in SQL.
@@ -48,10 +53,10 @@ def _max_frequency_condition(max_frequency):
 
 
 # Return the IDs, in order, of the SVs in the database that pass the filters.
-def filter_sv_ids(db_path, caller_support="any", sv_type="any", max_frequency=None):
+def filter_sv_ids(db_path, caller_support="any", min_samples=1, sv_type="any", max_frequency=None):
     conditions, params = [], []
     for condition in (
-        _caller_support_condition(caller_support),
+        _sample_support_condition(caller_support, min_samples),
         _sv_type_condition(sv_type),
         _max_frequency_condition(max_frequency),
     ):

@@ -70,9 +70,25 @@ def test_caller_support_one_caller_keeps_svs_it_called(tmp_path):
     assert filter_sv_ids(db_path, caller_support="cutesv") == [2, 3, 4]
 
 
-# Both callers count whether they called the SV in the same sample or not.
-def test_caller_support_both_keeps_svs_every_caller_called(tmp_path):
-    assert filter_sv_ids(write_test_database(tmp_path), caller_support="both") == [3, 4]
+# Both callers must call the SV in the same sample, so 4 (called by each in a
+# different sample) doesn't pass.
+def test_caller_support_both_keeps_svs_every_caller_called_in_one_sample(tmp_path):
+    assert filter_sv_ids(write_test_database(tmp_path), caller_support="both") == [3]
+
+
+def test_min_samples_with_any_caller(tmp_path):
+    db_path = write_test_database(tmp_path)
+    assert filter_sv_ids(db_path, min_samples=1) == [1, 2, 3, 4]
+    assert filter_sv_ids(db_path, min_samples=2) == [2, 4]
+    assert filter_sv_ids(db_path, min_samples=3) == []
+
+
+# Only samples where the SV meets caller_support count toward min_samples.
+def test_min_samples_counts_samples_that_meet_caller_support(tmp_path):
+    db_path = write_test_database(tmp_path)
+    assert filter_sv_ids(db_path, caller_support="cutesv", min_samples=2) == [2]
+    assert filter_sv_ids(db_path, caller_support="sniffles2", min_samples=2) == []
+    assert filter_sv_ids(db_path, caller_support="both", min_samples=2) == []
 
 
 def test_sv_type_keeps_svs_of_that_type(tmp_path):

@@ -82,7 +82,7 @@ Available filter options:
 --region <genomic-region>
 ```
 
-`--caller-support` keeps SVs called by `sniffles2` or `cutesv` (whether or not the other caller also called them), by `both` callers, or by `any` caller.
+`--caller-support` and `--min-samples` work together: an SV passes if it meets `--caller-support` in at least `--min-samples` samples. In a sample, it meets `--caller-support` if `sniffles2` or `cutesv` called it there (whether or not the other caller also did), if `both` callers did, or, for `any`, if either did.
 
 `--max-frequency` filters SVs by how common they are. An SV's allele frequency in gnomAD or CoLoRSdb is the fraction of chromosomes in that database's population that carry it, from 0 to 1. An SV passes if, in each database, its frequency is at most `--max-frequency` or it isn't found there.
 
