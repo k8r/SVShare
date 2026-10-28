@@ -2,6 +2,7 @@
 import sqlite3
 
 from .callers import CALLERS
+from .genes import GENE_INFO, read_gene_symbols
 from .population import DATASETS
 
 
@@ -12,6 +13,16 @@ def parse_gene_list(genes, gene_file):
         with open(gene_file) as f:
             gene_set.update(line.strip() for line in f if line.strip())
     return sorted(gene_set)
+
+
+# Return the genes that aren't known symbols, ignoring case. Known symbols are
+# HGNC's plus the database's gene names, which include genes HGNC doesn't name.
+def find_unknown_genes(genes, db_path, gene_info=GENE_INFO):
+    known = {symbol.upper() for symbol in read_gene_symbols(gene_info)}
+    with sqlite3.connect(db_path) as db:
+        known.update(name.upper() for (name,) in db.execute("SELECT DISTINCT gene_name FROM transcripts"))
+    db.close()
+    return [gene for gene in genes if gene.upper() not in known]
 
 
 # The --caller-support and --min-samples filters, written in SQL. An SV passes

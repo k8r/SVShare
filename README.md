@@ -73,7 +73,7 @@ Pass `--output` to name the report or write it elsewhere, e.g. to keep reports m
 Available filter options:
 
 ```text
---caller-support {both,sniffles2,cutesv,any}   Default: any
+--caller-support {sniffles2,cutesv,both,any}   Default: any
 --sv-type {DEL,DUP,INS,INV,BND,any}            Default: any
 --max-frequency <number>                       Default: 0.01
 --min-samples <number>                         Default: 2
