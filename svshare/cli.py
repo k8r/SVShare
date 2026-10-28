@@ -13,6 +13,15 @@ def _comma_separated(value):
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+# Parse a genomic region into (chrom, start, end), allowing commas in the numbers.
+def _region(value):
+    chrom, _, span = value.rpartition(":")
+    start, _, end = span.replace(",", "").partition("-")
+    if not (chrom and start.isdigit() and end.isdigit() and int(start) <= int(end)):
+        raise argparse.ArgumentTypeError(f"{value!r} isn't a region like chr1:1000-2000")
+    return chrom, int(start), int(end)
+
+
 # Build the parser with the analyze and report subcommands.
 def build_parser():
     parser = argparse.ArgumentParser(
@@ -96,14 +105,16 @@ def build_parser():
     )
     report_parser.add_argument(
         "--genes", type=_comma_separated, default=None,
-        help="Comma-separated gene symbols to filter to, e.g. TP53,BRCA1."
+        help="Keep SVs that overlap the promoter, exons, or introns of one of these "
+        "comma-separated genes, e.g. TP53,BRCA1."
     )
     report_parser.add_argument(
         "--gene-file", type=Path, default=None,
-        help="Text file of gene symbols, one per line, no header.",
+        help="Text file of gene symbols, one per line, no header, used like --genes.",
     )
     report_parser.add_argument(
-        "--region", default=None, help="Genomic region to filter to, e.g. chr1:1000-2000."
+        "--region", type=_region, default=None,
+        help="Keep SVs that overlap this region, e.g. chr1:1000-2000."
     )
     report_parser.set_defaults(func=reporting.run)
 

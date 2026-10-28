@@ -34,19 +34,38 @@ def test_no_genes_or_gene_file_returns_empty_list():
 
 
 # A database with four SVs:
-#   1  a DEL called only by sniffles2, in neither population database
-#   2  an INS called only by cuteSV (in two samples), at 1% in gnomAD
-#   3  a DEL called by both callers in the same sample, at 20% in CoLoRSdb
-#   4  a BND called by both callers in different samples, at 2% in gnomAD and
-#      0.1% in CoLoRSdb
+#   1  a DEL at chr1:1000-2000 called only by sniffles2, in neither population
+#      database, overlapping an intron of GENE1
+#   2  an INS at chr1:5000 called only by cuteSV (in two samples), at 1% in
+#      gnomAD, near GENE1's promoter but not overlapping it
+#   3  a DEL at chr2:1000-3000 called by both callers in the same sample, at 20%
+#      in CoLoRSdb, overlapping GENE2's promoter
+#   4  a BND at chr1:8000 called by both callers in different samples, at 2% in
+#      gnomAD and 0.1% in CoLoRSdb
 def write_test_database(tmp_path):
     db_path = tmp_path / "svshare.db"
     with sqlite3.connect(db_path) as db:
         db.executescript(SCHEMA)
         db.executemany(
-            "INSERT INTO svs (sv_id, svtype, gnomad_af, colorsdb_af) VALUES (?, ?, ?, ?)",
-            [(1, "DEL", None, None), (2, "INS", 0.01, None), (3, "DEL", None, 0.2),
-             (4, "BND", 0.02, 0.001)],
+            "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype, gnomad_af, colorsdb_af)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [(1, "chr1", 1000, 2000, "DEL", None, None),
+             (2, "chr1", 5000, 5001, "INS", 0.01, None),
+             (3, "chr2", 1000, 3000, "DEL", None, 0.2),
+             # A breakend's END is its mate's position, so it's before pos here.
+             (4, "chr1", 8000, 100, "BND", 0.02, 0.001)],
+        )
+        db.executemany(
+            "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
+            " mane_select, chrom, strand) VALUES (?, ?, ?, 'protein_coding', 1, ?, '+')",
+            [("T1", "GENE1", "G1", "chr1"), ("T2", "GENE2", "G2", "chr2")],
+        )
+        db.executemany(
+            "INSERT INTO sv_transcript_parts (sv_id, transcript_id, region, number, pos,"
+            " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [(1, "T1", "intron", 1, 1500, 2500, 1),
+             (2, "T1", "promoter", None, 5500, 7499, 0),
+             (3, "T2", "promoter", None, 2500, 4499, 1)],
         )
         db.executemany(
             "INSERT INTO calls (sv_id, sample, caller, vcf_id) VALUES (?, ?, ?, ?)",
@@ -109,3 +128,22 @@ def test_max_frequency_keeps_svs_rare_in_every_database(tmp_path):
     db_path = write_test_database(tmp_path)
     assert filter_sv_ids(db_path, max_frequency=None) == [1, 2, 3, 4]
     assert filter_sv_ids(db_path, max_frequency=0.01) == [1, 2]
+
+
+# Only parts the SV overlaps count, so 2 (near GENE1's promoter) doesn't pass.
+def test_genes_keeps_svs_overlapping_a_listed_gene(tmp_path):
+    db_path = write_test_database(tmp_path)
+    assert filter_sv_ids(db_path, genes=[]) == [1, 2, 3, 4]
+    assert filter_sv_ids(db_path, genes=["GENE1"]) == [1]
+    assert filter_sv_ids(db_path, genes=["gene2"]) == [3]
+    assert filter_sv_ids(db_path, genes=["GENE1", "GENE2"]) == [1, 3]
+
+
+# Insertions and breakends cover just their position, so 4's END is ignored.
+def test_region_keeps_svs_overlapping_it(tmp_path):
+    db_path = write_test_database(tmp_path)
+    assert filter_sv_ids(db_path, region=("chr1", 1500, 5000)) == [1, 2]
+    assert filter_sv_ids(db_path, region=("chr1", 2001, 4999)) == []
+    assert filter_sv_ids(db_path, region=("chr1", 1, 999)) == []
+    assert filter_sv_ids(db_path, region=("chr1", 8000, 8000)) == [4]
+    assert filter_sv_ids(db_path, region=("chr2", 1, 1000)) == [3]

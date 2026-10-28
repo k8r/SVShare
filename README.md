@@ -86,7 +86,7 @@ Available filter options:
 
 `--max-frequency` filters SVs by how common they are. An SV's allele frequency in gnomAD or CoLoRSdb is the fraction of chromosomes in that database's population that carry it, from 0 to 1. An SV passes if, in each database, its frequency is at most `--max-frequency` or it isn't found there.
 
-`--genes` keeps SVs that affect at least one of the listed genes.
+`--genes` keeps SVs that overlap the promoter (the 2,000 bp upstream of a transcript's start), exons, or introns of at least one of the listed genes.
 
 For longer gene lists, users can provide a text file:
 
@@ -103,3 +103,5 @@ BRCA2
 TP53
 PALB2
 ```
+
+`--region` keeps SVs that overlap a region given as `<chrom>:<start>-<end>`, e.g. `chr17:43044295-43125483`.

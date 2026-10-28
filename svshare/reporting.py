@@ -19,10 +19,12 @@ def run(args):
     if genes:
         print(f"  genes: {', '.join(genes)}")
     if args.region:
-        print(f"  region: {args.region}")
+        chrom, start, end = args.region
+        print(f"  region: {chrom}:{start}-{end}")
 
     sv_ids = filter_sv_ids(args.database, caller_support=args.caller_support,
                            min_samples=args.min_samples, sv_type=args.sv_type,
-                           max_frequency=args.max_frequency)
+                           max_frequency=args.max_frequency, genes=genes,
+                           region=args.region)
     print(f"{len(sv_ids)} SVs pass the filters")
     print(f"Output: {output}")

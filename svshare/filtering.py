@@ -52,13 +52,42 @@ def _max_frequency_condition(max_frequency):
     )
 
 
+# The --genes and --gene-file filter, written in SQL. An SV passes if it
+# overlaps a listed gene's promoter, exons, or introns in any transcript.
+def _genes_condition(genes):
+    if not genes:
+        return None
+    return (
+        "sv_id IN (SELECT sv_id FROM sv_transcript_parts JOIN transcripts USING (transcript_id)"
+        f" WHERE overlaps_sv = 1 AND gene_name COLLATE NOCASE IN ({', '.join('?' * len(genes))}))",
+        list(genes),
+    )
+
+
+# The --region filter, written in SQL. An SV passes if it overlaps the region.
+def _region_condition(region):
+    if region is None:
+        return None
+    chrom, start, end = region
+    # An insertion's or breakend's end position isn't where it ends, so only its
+    # start position is checked.
+    return (
+        "chrom = ? AND pos <= ?"
+        " AND (CASE WHEN svtype IN ('INS', 'BND') THEN pos ELSE MAX(end_pos, pos) END) >= ?",
+        [chrom, end, start],
+    )
+
+
 # Return the IDs, in order, of the SVs in the database that pass the filters.
-def filter_sv_ids(db_path, caller_support="any", min_samples=1, sv_type="any", max_frequency=None):
+def filter_sv_ids(db_path, caller_support="any", min_samples=1, sv_type="any",
+                  max_frequency=None, genes=None, region=None):
     conditions, params = [], []
     for condition in (
         _sample_support_condition(caller_support, min_samples),
         _sv_type_condition(sv_type),
         _max_frequency_condition(max_frequency),
+        _genes_condition(genes),
+        _region_condition(region),
     ):
         if condition:
             conditions.append(condition[0])
