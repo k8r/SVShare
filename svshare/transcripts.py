@@ -92,7 +92,7 @@ def transcript_regions(gtf):
         # Non-coding transcripts have no CDS or UTR lines, so their exons are
         # stored instead.
         if transcript_id not in coding:
-            rows.extend((chrom, start - 1, end, *transcript, "exon", number, strand)
+            rows.extend((chrom, start - 1, end, *transcript, "noncoding_exon", number, strand)
                         for chrom, start, end, number, transcript, strand in transcript_exons)
         # Introns are the gaps between exons, numbered like the exon before them.
         for left, right in zip(transcript_exons, transcript_exons[1:]):

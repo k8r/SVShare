@@ -1,14 +1,10 @@
 # Wrappers around the external structural-variant callers (sniffles2, cuteSV).
-# Each caller function has the same signature -- (bam, reference, out_dir, threads)
-# -- and returns (vcf_path, command), so analyze can treat them uniformly and
-# report exactly what was run.
 from pathlib import Path
 
 from .commands import run_command
 
 
 # Path of the VCF a caller writes for a BAM, e.g. results/HG002.sniffles2.vcf.
-# analyze --vcf-dir expects existing VCFs to follow the same naming.
 def caller_vcf_path(bam, out_dir, caller_name):
     return Path(out_dir) / f"{Path(bam).stem}.{caller_name}.vcf"
 
@@ -36,6 +32,7 @@ def run_cutesv(bam, reference, out_dir, threads=4):
         str(out_vcf),
         str(out_dir),
         "--threads", str(threads),
+        "--genotype",
     ]
     run_command(cmd)
     return out_vcf, cmd

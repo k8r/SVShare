@@ -89,7 +89,7 @@ def test_transcript_regions_covers_each_part_of_basic_transcripts(tmp_path):
         ("chr1", 4800, 4803, *T1, "stop_codon", 2, "+"),
         ("chr1", 4803, 5000, *T1, "UTR", 2, "+"),
         ("chr1", 200, 2200, *T1B, "promoter", None, "+"),
-        ("chr1", 2200, 2400, *T1B, "exon", 1, "+"),
+        ("chr1", 2200, 2400, *T1B, "noncoding_exon", 1, "+"),
         ("chr1", 20000, 20400, *T2, "CDS", 2, "-"),
         ("chr1", 20400, 20600, *T2, "intron", 1, "-"),
         ("chr1", 20600, 20997, *T2, "CDS", 1, "-"),
@@ -160,7 +160,7 @@ def test_add_sv_transcripts_stores_parts_around_each_sv(tmp_path):
         (1, "T1", "intron", 1, 2001, 3000, 1),
         (1, "T1", "CDS", 2, 3001, 4800, 0),
         (1, "T1b", "promoter", None, 201, 2200, 1),
-        (1, "T1b", "exon", 1, 2201, 2400, 1),
+        (1, "T1b", "noncoding_exon", 1, 2201, 2400, 1),
     ]
 
 

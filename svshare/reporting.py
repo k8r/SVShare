@@ -1,7 +1,9 @@
-# `report` subcommand: filter analysis results and write them as HTML or TSV.
+# `report` subcommand: filter and report analysis results.
 import sys
 
 from .filtering import filter_sv_ids, find_unknown_genes, parse_gene_list
+from .svs import load_svs
+from .tsv import write_tsv
 
 
 # Ask a yes/no question, defaulting to no.
@@ -42,4 +44,8 @@ def run(args):
                            max_frequency=args.max_frequency, genes=genes,
                            region=args.region)
     print(f"{len(sv_ids)} SVs pass the filters")
-    print(f"Output: {output}")
+    if args.format == "tsv":
+        write_tsv(load_svs(args.database, sv_ids), output)
+        print(f"Wrote {output}")
+    else:
+        print("HTML reports aren't written yet; pass --format tsv for a table")
