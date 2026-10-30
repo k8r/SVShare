@@ -1,4 +1,5 @@
 # Wrappers around the external structural-variant callers (sniffles2, cuteSV).
+import shutil
 from pathlib import Path
 
 from .commands import run_command
@@ -23,18 +24,34 @@ def run_sniffles2(bam, reference, out_dir, threads=4):
     return out_vcf, cmd
 
 
+# Delete a directory and everything in it, if it exists.
+def _remove_dir(path):
+    # On some drives, macOS's hidden ._ files disappear with the file they belong
+    # to, so a file can be gone by the time it's deleted.
+    def ignore_missing(_function, _path, exc_info):
+        if not issubclass(exc_info[0], FileNotFoundError):
+            raise exc_info[1]
+    shutil.rmtree(path, onerror=ignore_missing)
+
+
 def run_cutesv(bam, reference, out_dir, threads=4):
     out_vcf = caller_vcf_path(bam, out_dir, "cutesv")
+    # cuteSV won't start if an interrupted run left its working files behind, so
+    # it gets a folder of its own that's cleared first.
+    work_dir = Path(out_dir) / f"{Path(bam).stem}.cutesv_work"
+    _remove_dir(work_dir)
+    work_dir.mkdir()
     cmd = [
         "cuteSV",
         str(bam),
         str(reference),
         str(out_vcf),
-        str(out_dir),
+        str(work_dir),
         "--threads", str(threads),
         "--genotype",
     ]
     run_command(cmd)
+    _remove_dir(work_dir)
     return out_vcf, cmd
 
 

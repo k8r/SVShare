@@ -1,6 +1,5 @@
-# Wrapper around Jasmine, which merges SV calls from several VCFs into one VCF.
-# Like the callers, run_jasmine returns (vcf_path, command) so analyze can
-# report exactly what was run.
+# Wrappers around bcftools, which prepares each caller's VCF for merging, and
+# Jasmine, which merges SV calls from several VCFs into one VCF.
 import shutil
 from pathlib import Path
 
@@ -18,12 +17,19 @@ JASMINE_SETTINGS = {
 }
 
 
-# Merge the given VCFs into out_vcf. Jasmine reads its inputs from a text file
-# listing one VCF path per line; it's saved in the same directory as out_vcf and
-# named after it (e.g. the input list for HG002.merged.vcf is
-# HG002.merged.jasmine_inputs.txt).
+# Copy a caller's VCF into out_dir without its 0/0 calls, so Jasmine doesn't
+# merge them. A 0/0 genotype means the sample doesn't have the SV.
+def drop_0_0_calls(vcf, out_dir):
+    out_vcf = Path(out_dir) / f"{Path(vcf).stem}.called.vcf"
+    cmd = ["bcftools", "view", "--exclude", 'GT="ref"', str(vcf), "-o", str(out_vcf)]
+    run_command(cmd)
+    return out_vcf, cmd
+
+
+# Merge the given VCFs into out_vcf.
 def run_jasmine(vcfs, out_vcf, out_dir, threads=4):
     out_vcf = Path(out_vcf)
+    # Jasmine reads its input VCFs from a file listing one per line.
     input_list = out_vcf.with_suffix(".jasmine_inputs.txt")
     input_list.write_text("".join(f"{vcf}\n" for vcf in vcfs))
     cmd = [
@@ -33,9 +39,11 @@ def run_jasmine(vcfs, out_vcf, out_dir, threads=4):
         f"out_dir={out_dir}",
         f"threads={threads}",
         *(f"{name}={value}" for name, value in JASMINE_SETTINGS.items()),
-        # Without this, Jasmine recalculates each call's END and SVLEN from its
-        # REF and ALT, assuming they start with a padding base. cuteSV's don't,
-        # so its correct values would come out one base short.
+        # Without this, Jasmine recalculates each call's end and length from its
+        # sequence, assuming the sequence starts with the reference base just
+        # before the SV.
+        # cuteSV's insertions don't, so their lengths would come out one base
+        # short.
         "--leave_breakpoints",
     ]
     # Bioconda's jasmine launcher is a bash script with no #! line, so it can't be

@@ -7,7 +7,7 @@ from .callers import CALLERS, caller_vcf_path
 from .database import write_database
 from .genes import add_genes
 from .transcripts import add_sv_transcripts
-from .merging import run_jasmine
+from .merging import drop_0_0_calls, run_jasmine
 from .population import DATASETS, add_population_frequencies
 from .reference import check_bam_reference_compatibility, ensure_reference_index
 
@@ -65,6 +65,9 @@ def run(args):
                 vcf, cmd = caller(sample, args.reference, args.output)
                 commands[sample].append(cmd)
                 run_commands.append((Path(sample).stem, name, cmd))
+            vcf, cmd = drop_0_0_calls(vcf, args.output)
+            commands[sample].append(cmd)
+            run_commands.append((Path(sample).stem, "bcftools", cmd))
             inputs.append((Path(sample).stem, name, vcf))
 
     # Group calls of the same SV across all samples and callers.
