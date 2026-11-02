@@ -21,11 +21,12 @@ def write_test_database(tmp_path):
              (3, "chr2", 100, 9000, "BND", 0, None, None)],
         )
         db.executemany(
-            "INSERT INTO calls (sv_id, sample, caller, vcf_id, genotype) VALUES (?, ?, ?, ?, ?)",
-            [(1, "HG002", "cutesv", "a", "1/1"), (1, "HG002", "sniffles2", "b", "0/1"),
-             (1, "HG003", "cutesv", "c", "./."),
-             (2, "HG002", "sniffles2", "d", "0|1"), (2, "HG002", "cutesv", "e", "0|1"),
-             (3, "HG003", "sniffles2", "f", "0/1")],
+            "INSERT INTO calls (sv_id, sample, caller, vcf_id, genotype, read_support)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            [(1, "HG002", "cutesv", "a", "1/1", 4), (1, "HG002", "sniffles2", "b", "0/1", 3),
+             (1, "HG003", "cutesv", "c", "./.", None),
+             (2, "HG002", "sniffles2", "d", "0|1", 6), (2, "HG002", "cutesv", "e", "0|1", 6),
+             (3, "HG003", "sniffles2", "f", "0/1", 5)],
         )
         db.executemany(
             "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
@@ -60,14 +61,14 @@ def test_load_svs(tmp_path):
     svs = load_svs(write_test_database(tmp_path), [1, 2, 3])
     assert svs == [
         SV(3, "chr2", 100, None, "BND", 0, None, None,
-           [Call("HG003", "sniffles2", "0/1")],
+           [Call("HG003", "sniffles2", "0/1", 5)],
            [Gene("GENE2", None, None, None, ["promoter"])]),
         SV(2, "chr2", 300, None, "INS", 50, None, 0.005,
-           [Call("HG002", "cutesv", "0|1"), Call("HG002", "sniffles2", "0|1")],
+           [Call("HG002", "cutesv", "0|1", 6), Call("HG002", "sniffles2", "0|1", 6)],
            [Gene("GENE1", "gene one", "Sufficient evidence", None, ["UTR", "intron"])]),
         SV(1, "chr10", 500, 600, "DEL", -100, None, None,
-           [Call("HG002", "cutesv", "1/1"), Call("HG002", "sniffles2", "0/1"),
-            Call("HG003", "cutesv", "./.")],
+           [Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
+            Call("HG003", "cutesv", "./.", None)],
            []),
     ]
 

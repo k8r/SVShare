@@ -4,8 +4,9 @@ import csv
 from .callers import CALLERS
 
 COLUMNS = [
-    "chrom", "pos", "end", "svtype", "svlen", "samples", "callers", "gnomad_af",
-    "colorsdb_af", "genes", "gene_names", "haploinsufficiency", "triplosensitivity",
+    "chrom", "pos", "end", "svtype", "svlen", "samples", "read_support",
+    "weakest_sample_support", "callers", "gnomad_af", "colorsdb_af", "genes",
+    "gene_names", "haploinsufficiency", "triplosensitivity",
 ]
 
 
@@ -29,6 +30,25 @@ def _samples(calls):
     return ", ".join(samples)
 
 
+# List how many reads supported each call, by sample and then caller, leaving
+# out calls without a count.
+def _read_support(calls):
+    calls = sorted((call for call in calls if call.read_support is not None),
+                   key=lambda call: (call.sample, list(CALLERS).index(call.caller)))
+    return "; ".join(f"{call.read_support} from {call.caller} for {call.sample}"
+                     for call in calls) or None
+
+
+# The read support of the least supported sample, taking each sample's
+# best-supported call.
+def _weakest_sample_support(calls):
+    best = {}
+    for call in calls:
+        if call.read_support is not None:
+            best[call.sample] = max(best.get(call.sample, 0), call.read_support)
+    return min(best.values(), default=None)
+
+
 # Join each gene's value as "GENE: value", skipping genes without one.
 def _per_gene(genes, field):
     return "; ".join(f"{gene.name}: {getattr(gene, field)}" for gene in genes
@@ -44,6 +64,8 @@ def _row(sv):
         "svtype": sv.svtype,
         "svlen": sv.svlen,
         "samples": _samples(sv.calls),
+        "read_support": _read_support(sv.calls),
+        "weakest_sample_support": _weakest_sample_support(sv.calls),
         "callers": ",".join(caller for caller in CALLERS
                             if any(call.caller == caller for call in sv.calls)),
         "gnomad_af": sv.gnomad_af,

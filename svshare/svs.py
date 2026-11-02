@@ -11,6 +11,7 @@ class Call:
     sample: str
     caller: str
     genotype: str | None
+    read_support: int | None = None
 
 
 # A gene an SV overlaps, with the parts of it the SV overlaps in any transcript.
@@ -53,11 +54,12 @@ def load_svs(db_path, sv_ids):
     wanted = set(sv_ids)
     calls, regions = {}, {}
     with sqlite3.connect(db_path) as db:
-        for sv_id, sample, caller, genotype in db.execute(
-            "SELECT sv_id, sample, caller, genotype FROM calls ORDER BY sample, caller"
+        for sv_id, sample, caller, genotype, read_support in db.execute(
+            "SELECT sv_id, sample, caller, genotype, read_support FROM calls"
+            " ORDER BY sample, caller"
         ):
             if sv_id in wanted:
-                calls.setdefault(sv_id, []).append(Call(sample, caller, genotype))
+                calls.setdefault(sv_id, []).append(Call(sample, caller, genotype, read_support))
         for sv_id, gene_name, gene_id, region in db.execute(
             "SELECT DISTINCT sv_id, gene_name, gene_id, region FROM sv_transcript_parts"
             " JOIN transcripts USING (transcript_id) WHERE overlaps_sv = 1"

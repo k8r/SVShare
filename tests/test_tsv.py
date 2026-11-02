@@ -18,6 +18,26 @@ def test_samples_list_each_sample_with_its_genotype():
     assert row["callers"] == "sniffles2,cutesv"
 
 
+def test_read_support_lists_each_call():
+    row = _row(make_sv(calls=[
+        Call("HG003", "sniffles2", "0/1", 6),
+        Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
+        Call("HG004", "cutesv", "./.", None),
+    ]))
+    assert row["read_support"] == (
+        "3 from sniffles2 for HG002; 4 from cutesv for HG002; 6 from sniffles2 for HG003")
+
+
+# Each sample's best-supported call counts, and the lowest of those is reported.
+def test_weakest_sample_support():
+    row = _row(make_sv(calls=[
+        Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
+        Call("HG003", "sniffles2", "0/1", 6), Call("HG004", "cutesv", "./.", None),
+    ]))
+    assert row["weakest_sample_support"] == 4
+    assert _row(make_sv())["weakest_sample_support"] is None
+
+
 def test_genes_list_overlapped_parts_and_gene_info():
     row = _row(make_sv(genes=[
         Gene("GENE1", "gene one", "Sufficient evidence", None, ["UTR", "intron"]),
@@ -38,12 +58,12 @@ def test_no_genes():
 def test_write_tsv(tmp_path):
     output = tmp_path / "report.tsv"
     write_tsv([make_sv(
-        calls=[Call("HG002", "sniffles2", "0|1")],
+        calls=[Call("HG002", "sniffles2", "0|1", 7)],
         genes=[Gene("GENE1", "gene one", None, None, ["intron"])],
     )], output)
     header, row = output.read_text().splitlines()
     assert header.split("\t") == COLUMNS
     assert row.split("\t") == [
-        "chr2", "300", "", "INS", "50", "HG002 (0|1)", "sniffles2", "", "0.005",
-        "GENE1 (intron)", "GENE1: gene one", "", "",
+        "chr2", "300", "", "INS", "50", "HG002 (0|1)", "7 from sniffles2 for HG002", "7",
+        "sniffles2", "", "0.005", "GENE1 (intron)", "GENE1: gene one", "", "",
     ]
