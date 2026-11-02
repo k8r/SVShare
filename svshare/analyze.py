@@ -3,13 +3,14 @@ import shlex
 import sys
 from pathlib import Path
 
-from .callers import CALLERS, caller_vcf_path
+from .callers import CALLERS, caller_vcf_path, cutesv_min_support
 from .database import write_database
 from .genes import add_genes
 from .transcripts import add_sv_transcripts
 from .merging import drop_0_0_calls, run_jasmine
 from .population import DATASETS, add_population_frequencies
 from .reference import check_bam_reference_compatibility, ensure_reference_index
+from .sequencing import detect_platform, mean_depth
 
 # Jasmine's merge of every VCF from every sample across callers.
 MERGED_VCF = "all_calls.merged.vcf"
@@ -36,6 +37,7 @@ def run(args):
     ensure_reference_index(args.reference)
 
     all_issues = []
+    platforms = {}
     print(f"Analyzing {len(args.samples)} sample(s):")
     for sample in args.samples:
         print(f"  - {sample}")
@@ -43,9 +45,17 @@ def run(args):
         for issue in issues:
             print(f"    ! {issue}")
         all_issues.extend(issues)
+        # The platform only matters when the callers run.
+        if not args.vcf_dir:
+            platforms[sample] = args.platform or detect_platform(sample)
+            print(f"    platform: {platforms[sample] or 'unknown'}")
 
     if all_issues:
         sys.exit(f"{len(all_issues)} contig mismatch(es) found; aborting.")
+    unknown = [str(sample) for sample, platform in platforms.items() if not platform]
+    if unknown:
+        sys.exit(f"Couldn't tell which platform sequenced {', '.join(unknown)}; "
+                 "pass --platform hifi, ont, or clr.")
 
     args.output.mkdir(parents=True, exist_ok=True)
     commands = {sample: [] for sample in args.samples}
@@ -56,13 +66,22 @@ def run(args):
     inputs = []
     for i, sample in enumerate(args.samples, start=1):
         print(f"\nSample {i}/{len(args.samples)}: {sample}")
+        if not args.vcf_dir:
+            print("  measuring read depth with mosdepth")
+            depth, cmd = mean_depth(sample, args.output)
+            commands[sample].append(cmd)
+            run_commands.append((Path(sample).stem, "mosdepth", cmd))
+            min_support = cutesv_min_support(depth, args.cutesv_min_support)
+            print(f"  mean depth {depth:.1f}x, so cuteSV needs {min_support} reads to call an SV")
+            # Settings only some callers take.
+            settings = {"cutesv": {"platform": platforms[sample], "min_support": min_support}}
         for name, caller in CALLERS.items():
             if args.vcf_dir:
                 vcf = caller_vcf_path(sample, args.vcf_dir, name)
                 print(f"  using existing {name} VCF: {vcf}")
             else:
                 print(f"  calling SVs with {name}")
-                vcf, cmd = caller(sample, args.reference, args.output)
+                vcf, cmd = caller(sample, args.reference, args.output, **settings.get(name, {}))
                 commands[sample].append(cmd)
                 run_commands.append((Path(sample).stem, name, cmd))
             vcf, cmd = drop_0_0_calls(vcf, args.output)

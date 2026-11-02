@@ -51,9 +51,14 @@ All three are optional, but recommended.
 - `--colorsdb`: the CoLoRSdb GRCh38 `pbsv.jasmine` VCF, also for looking up how common each SV is.
   - Download it from [CoLoRSdb v1.2.0 on Zenodo](https://zenodo.org/records/14814308), with its `.tbi` index in the same directory.
   - It's built from long reads, so it includes SVs that gnomAD's short reads miss, such as many insertions and SVs in repetitive regions.
-- `--gencode`: GENCODE's human gene annotation, for finding the genes each SV affects.
+- `--gencode`: GENCODE's human gene annotation, for finding which genes each SV overlaps and where in each gene: the promoter, untranslated regions (UTRs), coding sequence (CDS), start and stop codons, introns, and the exons of non-coding transcripts.
   - Download `gencode.v50.annotation.gtf.gz` from the [GENCODE human releases page](https://www.gencodegenes.org/human/).
   - Each gene found is also given a readable name from [HGNC](https://www.genenames.org/), a summary of what it does from [NCBI Gene](https://www.ncbi.nlm.nih.gov/gene/), and dosage sensitivity scores from the [ClinGen Dosage Sensitivity Map](https://dosage.clinicalgenome.org/). These come from `svshare/data/gene_info.tsv`, which is included with SVShare; to refresh it, run `python3 scripts/build_gene_info.py`.
+
+Two more options tune cuteSV:
+
+- `--platform`: `hifi`, `ont`, or `clr`. cuteSV uses its recommended settings for the platform. By default it's read from the aligner command in each BAM's header; pass it if that fails.
+- `--cutesv-min-support`: the fraction of a sample's mean read depth that must support an SV for cuteSV to call it (default: 0.3), e.g. 3 reads at 10× depth.
 
 ### Report
 

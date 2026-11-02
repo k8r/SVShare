@@ -6,6 +6,7 @@ import svshare
 
 from . import analyze, reporting
 from .callers import CALLERS
+from .sequencing import PLATFORMS
 
 
 # Split a comma-separated value into a list, ignoring spaces and empty items.
@@ -20,6 +21,17 @@ def _region(value):
     if not (chrom and start.isdigit() and end.isdigit() and int(start) <= int(end)):
         raise argparse.ArgumentTypeError(f"{value!r} isn't a region like chr1:1000-2000")
     return chrom, int(start), int(end)
+
+
+# Parse a fraction greater than 0 and at most 1.
+def _fraction(value):
+    try:
+        fraction = float(value)
+    except ValueError:
+        fraction = None
+    if fraction is None or not 0 < fraction <= 1:
+        raise argparse.ArgumentTypeError(f"{value!r} isn't a fraction between 0 and 1, e.g. 0.3")
+    return fraction
 
 
 # Build the parser with the analyze and report subcommands.
@@ -58,6 +70,16 @@ def build_parser():
         "--gencode", type=Path, default=None,
         help="GENCODE gene annotation GTF (.gtf or .gtf.gz) to find the genes each SV "
         "affects. Without it, SVs aren't matched to genes.",
+    )
+    analyze_parser.add_argument(
+        "--platform", choices=PLATFORMS, default=None,
+        help="How the samples were sequenced: PacBio HiFi, Oxford Nanopore, or "
+        "PacBio CLR (default: detected from each BAM's header).",
+    )
+    analyze_parser.add_argument(
+        "--cutesv-min-support", type=_fraction, default=0.3,
+        help="Fraction of a sample's mean read depth that must support an SV for "
+        "cuteSV to call it (default: 0.3).",
     )
     # Development only (hidden from --help): reuse caller VCFs from an earlier run,
     # named <sample>.sniffles2.vcf and <sample>.cutesv.vcf, instead of rerunning the callers.
