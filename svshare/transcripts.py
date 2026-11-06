@@ -5,6 +5,7 @@ import sqlite3
 from pathlib import Path
 
 from .commands import ToolRun, run_command
+from .svs import sv_end
 
 # The GTF doesn't include promoters, so each transcript's promoter is taken to be
 # the PROMOTER_SIZE bp just upstream of its start.
@@ -130,12 +131,7 @@ def write_sv_windows_bed(db, path):
             "SELECT sv_id, chrom, pos, end_pos, svtype FROM svs"
         ):
             start = pos - 1
-            if svtype in ("INS", "BND") or end_pos is None:
-                # An insertion or breakend covers just its position, whatever END
-                # its caller gave, so its window is the minimum margin on each side.
-                end = pos
-            else:
-                end = max(end_pos, pos)
+            end = sv_end(svtype, pos, end_pos)
             margin = max(MIN_VIEW_MARGIN, round(VIEW_MARGIN_FRACTION * (end - start)))
             window_start, window_end = max(0, start - margin), end + margin
             row = (chrom, window_start, window_end, sv_id, start, end)

@@ -6,6 +6,8 @@ import sqlite3
 
 import pysam
 
+from .svs import sv_end
+
 # The fewest N's in a row that count as a gap; shorter runs are usually just
 # uncertain bases.
 MIN_GAP_LENGTH = 10
@@ -58,9 +60,8 @@ def add_reference_gaps(db_path, reference):
         svs = db.execute("SELECT sv_id, chrom, pos, end_pos, svtype FROM svs").fetchall()
         near = []
         for sv_id, chrom, pos, end_pos, svtype in svs:
-            # An insertion's or breakend's end position isn't where it ends.
-            end = pos if svtype in ("INS", "BND") or end_pos is None else max(end_pos, pos)
-            description = describe_nearest_gap(gaps.get(chrom, []), pos, end)
+            description = describe_nearest_gap(gaps.get(chrom, []), pos,
+                                               sv_end(svtype, pos, end_pos))
             if description:
                 near.append((description, sv_id))
         db.executemany("UPDATE svs SET near_reference_gap = ? WHERE sv_id = ?", near)

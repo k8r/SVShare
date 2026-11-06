@@ -5,6 +5,9 @@ from dataclasses import dataclass
 # The order a gene's parts are listed in, roughly from upstream to downstream.
 REGION_ORDER = ["promoter", "UTR", "start_codon", "CDS", "stop_codon", "noncoding_exon", "intron"]
 
+# SV types that sit at one position, whatever end their caller gave.
+POINT_TYPES = ("INS", "BND")
+
 
 @dataclass
 class Call:
@@ -37,6 +40,14 @@ class SV:
     calls: list[Call]
     genes: list[Gene]
     near_reference_gap: str | None = None
+
+
+# Where an SV ends: at its position if it's an insertion or breakend or has no
+# end, otherwise at its end.
+def sv_end(svtype, pos, end_pos):
+    if svtype in POINT_TYPES or end_pos is None:
+        return pos
+    return max(end_pos, pos)
 
 
 # Sort key for chromosomes: numbered ones in number order, then X, Y, and M,
@@ -86,8 +97,7 @@ def load_svs(db_path, sv_ids):
         ]
         svs.append(SV(
             sv_id, chrom, pos,
-            # An insertion's or breakend's end position isn't where it ends.
-            None if svtype in ("INS", "BND") else end_pos,
+            None if svtype in POINT_TYPES else end_pos,
             svtype, svlen, gnomad_af, colorsdb_af, calls.get(sv_id, []), genes,
             near_reference_gap,
         ))

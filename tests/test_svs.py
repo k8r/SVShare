@@ -1,7 +1,7 @@
 import sqlite3
 
 from svshare.database import SCHEMA
-from svshare.svs import SV, Call, Gene, _chrom_order, load_svs
+from svshare.svs import SV, Call, Gene, _chrom_order, load_svs, sv_end
 
 
 # A database with three SVs:
@@ -79,3 +79,12 @@ def test_chromosomes_sort_by_number_then_x_y_m_then_name():
     chroms = ["chrUn_KI270302v1", "chrM", "chr10", "chrY", "chr1_KI270706v1_random", "chrX", "chr2"]
     assert sorted(chroms, key=_chrom_order) == [
         "chr2", "chr10", "chrX", "chrY", "chrM", "chr1_KI270706v1_random", "chrUn_KI270302v1"]
+
+
+# Insertions, breakends, and SVs without an end sit at their position.
+def test_sv_end():
+    assert sv_end("DEL", 100, 250) == 250
+    assert sv_end("INS", 100, 5000) == 100
+    assert sv_end("BND", 100, 9000) == 100
+    assert sv_end("DUP", 100, None) == 100
+    assert sv_end("INV", 100, 90) == 100
