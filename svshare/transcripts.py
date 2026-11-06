@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 from .commands import ToolRun, run_command
-from .database import connect
+from .database import connect, sv_positions
 from .svs import sv_end
 
 # The GTF doesn't include promoters, so each transcript's promoter is taken to be
@@ -124,17 +124,15 @@ def split_out_codons(rows, codons):
     return result
 
 
-# Write a BED file with each SV in the database widened by its view margin.
-def write_sv_windows_bed(db, path):
+# Write a BED file with each SV widened by its view margin.
+def write_sv_windows_bed(svs, path):
     with open(path, "w") as f:
-        for sv_id, chrom, pos, end_pos, svtype in db.execute(
-            "SELECT sv_id, chrom, pos, end_pos, svtype FROM svs"
-        ):
-            start = pos - 1
-            end = sv_end(svtype, pos, end_pos)
+        for sv in svs:
+            start = sv.pos - 1
+            end = sv_end(sv.svtype, sv.pos, sv.end_pos)
             margin = max(MIN_VIEW_MARGIN, round(VIEW_MARGIN_FRACTION * (end - start)))
             window_start, window_end = max(0, start - margin), end + margin
-            row = (chrom, window_start, window_end, sv_id, start, end)
+            row = (sv.chrom, window_start, window_end, sv.sv_id, start, end)
             f.write("\t".join(map(str, row)) + "\n")
 
 
@@ -155,8 +153,9 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
                 for row in transcript_regions(gtf)
             )
 
+    svs = sv_positions(db_path)
+    write_sv_windows_bed(svs, windows_bed)
     with connect(db_path) as db:
-        write_sv_windows_bed(db, windows_bed)
         cmd = ["bedtools", "intersect", "-a", str(windows_bed), "-b", str(regions_bed),
                "-wa", "-wb"]
         with open(overlaps_bed, "w") as f:
@@ -189,6 +188,5 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
             " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
             sorted(parts, key=lambda part: (part[0], part[1], part[4])),
         )
-        total = db.execute("SELECT COUNT(*) FROM svs").fetchone()[0]
     affected = {part[0] for part in parts if part[6]}
-    return ToolRun(None, "bedtools", cmd, overlaps_bed), len(affected), total
+    return ToolRun(None, "bedtools", cmd, overlaps_bed), len(affected), len(svs)

@@ -1,7 +1,7 @@
 import gzip
 import sqlite3
 
-from svshare.database import SCHEMA
+from svshare.database import SCHEMA, sv_positions
 from svshare.transcripts import add_sv_transcripts, transcript_regions, write_sv_windows_bed
 
 MANE = 'tag "basic"; tag "MANE_Select";'
@@ -185,7 +185,7 @@ def test_write_sv_windows_bed_treats_insertions_as_points(tmp_path):
     create_database(db_path, [(1, "chr1", 5000, 5001, "INS"), (2, "chr1", 9001, 13000, "DEL")])
     windows_bed = tmp_path / "windows.bed"
 
-    write_sv_windows_bed(sqlite3.connect(db_path), windows_bed)
+    write_sv_windows_bed(sv_positions(db_path), windows_bed)
 
     assert windows_bed.read_text().splitlines() == [
         "chr1\t3999\t6000\t1\t4999\t5000",

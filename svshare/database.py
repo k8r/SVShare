@@ -29,6 +29,7 @@
 # SV is to a gap in the reference, if it's at or near one.
 import sqlite3
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 
 SCHEMA = """
@@ -112,6 +113,25 @@ def connect(db_path):
             yield db
     finally:
         db.close()
+
+
+# Where an SV is, and its type and length.
+@dataclass
+class SVPosition:
+    sv_id: int
+    chrom: str
+    pos: int
+    end_pos: int | None
+    svtype: str
+    svlen: int | None
+
+
+# Return every SV's position, type, and length.
+def sv_positions(db_path):
+    with connect(db_path) as db:
+        return [SVPosition(*row) for row in db.execute(
+            "SELECT sv_id, chrom, pos, end_pos, svtype, svlen FROM svs"
+        )]
 
 
 # Yield (id, chrom, pos, info, format_values) for each record in a VCF, where
