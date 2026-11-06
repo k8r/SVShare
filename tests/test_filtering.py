@@ -171,3 +171,14 @@ def test_find_unknown_genes_accepts_known_symbols(tmp_path):
 def test_find_unknown_genes_returns_unknown_symbols(tmp_path):
     db_path, gene_info = write_test_database(tmp_path), write_test_gene_info(tmp_path)
     assert find_unknown_genes(["BRCA1", "brac1", "TP35"], db_path, gene_info) == ["brac1", "TP35"]
+
+
+def test_near_reference_gap_excludes_includes_or_keeps_only_those_svs(tmp_path):
+    db_path = write_test_database(tmp_path)
+    with sqlite3.connect(db_path) as db:
+        db.execute("UPDATE svs SET near_reference_gap = 'overlaps 20 unknown bases'"
+                   " WHERE sv_id = 2")
+    db.close()
+    assert filter_sv_ids(db_path, near_reference_gap="include") == [1, 2, 3, 4]
+    assert filter_sv_ids(db_path, near_reference_gap="exclude") == [1, 3, 4]
+    assert filter_sv_ids(db_path, near_reference_gap="only") == [2]

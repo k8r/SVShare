@@ -85,6 +85,7 @@ Available filter options:
 --genes <gene1>,<gene2>,...
 --gene-file <file>
 --region <genomic-region>
+--near-reference-gap {exclude,include,only}    Default: exclude
 ```
 
 `--caller-support` and `--min-samples` work together: an SV passes if it meets `--caller-support` in at least `--min-samples` samples. In a sample, it meets `--caller-support` if `sniffles2` or `cutesv` called it there (whether or not the other caller also did), if `both` callers did, or, for `any`, if either did.
@@ -110,3 +111,5 @@ PALB2
 ```
 
 `--region` keeps SVs that overlap a region given as `<chrom>:<start>-<end>`, e.g. `chr17:43044295-43125483`.
+
+`--near-reference-gap` handles SVs within 1,000 bp of a gap in the reference, a stretch of unknown sequence written as N's. Reads can't align to a gap, so SVs there are usually artifacts of the gap's placeholder length. By default they're left out; `include` keeps them and `only` keeps just them. The report's `near_reference_gap` column describes how close each one is.

@@ -1,6 +1,9 @@
 import sqlite3
+from pathlib import Path
 
-from svshare.database import write_database
+from svshare.commands import ToolRun
+from svshare.database import save_tool_runs, write_database
+from svshare.merging import VCFPreppedForMerging
 
 HEADER = "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n"
 
@@ -32,13 +35,14 @@ def write_inputs(tmp_path):
          "SVTYPE=INS;SVLEN=300;END=5000;SUPP_VEC=01;SUPP=1;IDLIST=cuteSV.INS.0",
          "GT", "0/1"],
     ])
-    inputs = [("HG002", "sniffles2", sniffles), ("HG003", "cutesv", cutesv)]
+    inputs = [VCFPreppedForMerging("HG002", "sniffles2", sniffles),
+              VCFPreppedForMerging("HG003", "cutesv", cutesv)]
     return merged, inputs
 
 
 def write_test_database(tmp_path):
     merged, inputs = write_inputs(tmp_path)
-    return write_database(merged, inputs, tmp_path / "svshare.db", [])
+    return write_database(merged, inputs, tmp_path / "svshare.db")
 
 
 # Checks that each Jasmine record becomes one SV, with the kept call's end and
@@ -68,4 +72,19 @@ def test_write_database_keeps_one_row_per_call(tmp_path):
         (1, "HG002", "sniffles2", "Sniffles2.DEL.1", 1000, -150, "0/1", 22),
         (1, "HG003", "cutesv", "cuteSV.DEL.0", 1010, -140, "./.", 18),
         (2, "HG003", "cutesv", "cuteSV.INS.0", 5000, 300, "0/1", 9),
+    ]
+
+
+def test_save_tool_runs(tmp_path):
+    db_path = write_test_database(tmp_path)
+    save_tool_runs(db_path, [
+        ToolRun("HG002", "mosdepth", ["mosdepth", "out prefix"]),
+        ToolRun(None, "bedtools", ["bedtools", "intersect"], Path("overlaps.bed")),
+    ])
+    with sqlite3.connect(db_path) as db:
+        rows = db.execute("SELECT sample, tool, command FROM commands").fetchall()
+    db.close()
+    assert rows == [
+        ("HG002", "mosdepth", "mosdepth 'out prefix'"),
+        (None, "bedtools", "bedtools intersect > overlaps.bed"),
     ]

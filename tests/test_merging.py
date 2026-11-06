@@ -29,7 +29,7 @@ def test_drop_0_0_calls(tmp_path):
                                           (500, "e", "0|0")])
     )
 
-    out_vcf, _cmd = merging.drop_0_0_calls(vcf, tmp_path)
+    out_vcf, _run = merging.drop_0_0_calls(vcf, "HG002", tmp_path)
 
     assert out_vcf == tmp_path / "HG002.cutesv.called.vcf"
     ids = [line.split("\t")[2] for line in out_vcf.read_text().splitlines()

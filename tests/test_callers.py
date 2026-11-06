@@ -13,9 +13,9 @@ def test_cutesv_gets_a_cleared_work_dir(tmp_path, monkeypatch):
         seen.append(sorted(path.name for path in work_dir.iterdir()))
     monkeypatch.setattr(callers, "run_command", fake_run_command)
 
-    _vcf, cmd = callers.run_cutesv("HG002.bam", "reference.fa", tmp_path, "hifi", 3)
+    _vcf, run = callers.run_cutesv("HG002.bam", "HG002", "reference.fa", tmp_path, "hifi", 3)
 
-    assert cmd[4] == str(work_dir)
+    assert run.command[4] == str(work_dir)
     assert seen == [[]]
     assert not work_dir.exists()
 
@@ -24,8 +24,10 @@ def test_cutesv_gets_a_cleared_work_dir(tmp_path, monkeypatch):
 def test_cutesv_settings(tmp_path, monkeypatch):
     monkeypatch.setattr(callers, "run_command", lambda cmd: None)
 
-    _vcf, cmd = callers.run_cutesv("HG002.bam", "reference.fa", tmp_path, "ont", 4)
+    _vcf, run = callers.run_cutesv("HG002.bam", "HG002", "reference.fa", tmp_path, "ont", 4)
 
+    assert (run.sample, run.tool) == ("HG002", "cutesv")
+    cmd = run.command
     assert cmd[cmd.index("--min_support") + 1] == "4"
     assert cmd[cmd.index("--max_cluster_bias_DEL") + 1] == "100"
 

@@ -25,8 +25,8 @@
 #
 # An SV's pos, end_pos, and svlen are those of the call Jasmine kept. The
 # gnomad_ and colorsdb_ columns hold the ID and allele frequency of the matching
-# gnomAD and CoLoRSdb record, if any.
-import shlex
+# gnomAD and CoLoRSdb record, if any. near_reference_gap describes how close the
+# SV is to a gap in the reference, if it's at or near one.
 import sqlite3
 from pathlib import Path
 
@@ -43,7 +43,8 @@ CREATE TABLE svs (
     gnomad_id TEXT,
     gnomad_af REAL,
     colorsdb_id TEXT,
-    colorsdb_af REAL
+    colorsdb_af REAL,
+    near_reference_gap TEXT
 );
 CREATE TABLE calls (
     call_id INTEGER PRIMARY KEY,
@@ -138,34 +139,29 @@ def read_jasmine_groups(merged_vcf):
                _int_or_none(info.get("SVLEN")), members)
 
 
-# Write the database to db_path, replacing any earlier one. inputs lists
-# (sample, caller, vcf) in the order the VCFs were given to Jasmine; commands
-# lists (sample, tool, command) for each command run, in the order they ran.
-def write_database(merged_vcf, inputs, db_path, commands):
+# Write the database to db_path, replacing any earlier one. prepped_vcfs lists
+# the VCFs prepped for merging, in the order Jasmine was given them.
+def write_database(merged_vcf, prepped_vcfs, db_path):
     calls_by_input = [
         {call_id: (chrom, pos, info, fmt)
-         for call_id, chrom, pos, info, fmt in read_vcf_records(vcf)}
-        for _sample, _caller, vcf in inputs
+         for call_id, chrom, pos, info, fmt in read_vcf_records(prepped_vcf.vcf)}
+        for prepped_vcf in prepped_vcfs
     ]
 
     db_path = Path(db_path)
     db_path.unlink(missing_ok=True)
     with sqlite3.connect(db_path) as db:
         db.executescript(SCHEMA)
-        db.executemany(
-            "INSERT INTO commands (sample, tool, command) VALUES (?, ?, ?)",
-            [(sample, tool, shlex.join(cmd)) for sample, tool, cmd in commands],
-        )
 
         for sv_id, (chrom, pos, end_pos, svtype, svlen, members) in enumerate(
             read_jasmine_groups(merged_vcf), start=1
         ):
             calls = []
             for index, vcf_id in members:
-                sample, caller, _vcf = inputs[index]
+                prepped_vcf = prepped_vcfs[index]
                 call_chrom, call_pos, info, fmt = calls_by_input[index][vcf_id]
                 calls.append((
-                    sv_id, sample, caller, vcf_id, call_chrom, call_pos,
+                    sv_id, prepped_vcf.sample, prepped_vcf.caller, vcf_id, call_chrom, call_pos,
                     _int_or_none(info.get("END")), info.get("SVTYPE"),
                     _int_or_none(info.get("SVLEN")), fmt.get("GT"),
                     # Both sniffles2 and cuteSV report variant-supporting reads as DV.
@@ -188,3 +184,13 @@ def write_database(merged_vcf, inputs, db_path, commands):
             )
     db.close()
     return db_path
+
+
+# Add each outside tool run to the database, in the order they ran.
+def save_tool_runs(db_path, tool_runs):
+    with sqlite3.connect(db_path) as db:
+        db.executemany(
+            "INSERT INTO commands (sample, tool, command) VALUES (?, ?, ?)",
+            [(tool_run.sample, tool_run.tool, str(tool_run)) for tool_run in tool_runs],
+        )
+    db.close()

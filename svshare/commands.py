@@ -1,5 +1,22 @@
-# Run an external tool and raise a readable error if it fails.
+# Run outside tools, and record what was run.
+import shlex
 import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+
+
+# A run of an outside tool, and the sample it was run on, if any.
+@dataclass
+class ToolRun:
+    sample: str | None
+    tool: str
+    command: list[str]
+    # The file the tool's output was written to, if any.
+    stdout: Path | None = None
+
+    def __str__(self):
+        text = shlex.join(self.command)
+        return f"{text} > {shlex.quote(str(self.stdout))}" if self.stdout else text
 
 
 # stdout, if given, is an open file the command's output is written to.

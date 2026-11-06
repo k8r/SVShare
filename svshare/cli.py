@@ -138,6 +138,11 @@ def build_parser():
         "--region", type=_region, default=None,
         help="Keep SVs that overlap this region, e.g. chr1:1000-2000."
     )
+    report_parser.add_argument(
+        "--near-reference-gap", choices=["exclude", "include", "only"], default="exclude",
+        help="Whether to leave out SVs at or near a gap in the reference, which are "
+        "usually artifacts, include them, or keep only them (default: exclude).",
+    )
     report_parser.set_defaults(func=reporting.run)
 
     return parser

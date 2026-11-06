@@ -36,6 +36,7 @@ class SV:
     colorsdb_af: float | None
     calls: list[Call]
     genes: list[Gene]
+    near_reference_gap: str | None = None
 
 
 # Sort key for chromosomes: numbered ones in number order, then X, Y, and M,
@@ -70,12 +71,14 @@ def load_svs(db_path, sv_ids):
             "SELECT gene_id, full_name, haploinsufficiency, triplosensitivity FROM genes"
         )}
         rows = [row for row in db.execute(
-            "SELECT sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af FROM svs"
+            "SELECT sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af,"
+            " near_reference_gap FROM svs"
         ) if row[0] in wanted]
     db.close()
 
     svs = []
-    for sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af in rows:
+    for (sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af,
+         near_reference_gap) in rows:
         genes = [
             Gene(name, *gene_info.get(gene_id, (None, None, None)),
                  sorted(gene_regions, key=REGION_ORDER.index))
@@ -86,6 +89,7 @@ def load_svs(db_path, sv_ids):
             # An insertion's or breakend's end position isn't where it ends.
             None if svtype in ("INS", "BND") else end_pos,
             svtype, svlen, gnomad_af, colorsdb_af, calls.get(sv_id, []), genes,
+            near_reference_gap,
         ))
     svs.sort(key=lambda sv: (_chrom_order(sv.chrom), sv.pos, sv.sv_id))
     return svs

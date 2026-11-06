@@ -4,9 +4,10 @@ import csv
 from .callers import CALLERS
 
 COLUMNS = [
-    "chrom", "pos", "end", "svtype", "svlen", "samples", "read_support",
-    "weakest_sample_support", "callers", "gnomad_af", "colorsdb_af", "genes",
-    "gene_names", "haploinsufficiency", "triplosensitivity",
+    "genome_order", "chrom", "pos", "end", "svtype", "svlen", "samples",
+    "read_support", "weakest_sample_support", "near_reference_gap", "callers",
+    "gnomad_af", "colorsdb_af", "genes", "gene_names", "haploinsufficiency",
+    "triplosensitivity",
 ]
 
 
@@ -66,6 +67,7 @@ def _row(sv):
         "samples": _samples(sv.calls),
         "read_support": _read_support(sv.calls),
         "weakest_sample_support": _weakest_sample_support(sv.calls),
+        "near_reference_gap": sv.near_reference_gap,
         "callers": ",".join(caller for caller in CALLERS
                             if any(call.caller == caller for call in sv.calls)),
         "gnomad_af": sv.gnomad_af,
@@ -77,9 +79,11 @@ def _row(sv):
     }
 
 
-# Write SVs to output as a TSV table.
+# Write SVs to output as a TSV table, numbering them in the order given so the
+# table can be sorted back into that order.
 def write_tsv(svs, output):
     with open(output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=COLUMNS, delimiter="\t", lineterminator="\n")
         writer.writeheader()
-        writer.writerows(_row(sv) for sv in svs)
+        writer.writerows({"genome_order": i, **_row(sv)}
+                         for i, sv in enumerate(svs, start=1))

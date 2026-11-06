@@ -2,7 +2,7 @@
 import shutil
 from pathlib import Path
 
-from .commands import run_command
+from .commands import ToolRun, run_command
 
 # cuteSV's recommended settings for each platform.
 CUTESV_PLATFORM_SETTINGS = {
@@ -20,7 +20,7 @@ def caller_vcf_path(bam, out_dir, caller_name):
     return Path(out_dir) / f"{Path(bam).stem}.{caller_name}.vcf"
 
 
-def run_sniffles2(bam, reference, out_dir, threads=4):
+def run_sniffles2(bam, sample, reference, out_dir, threads=4):
     out_vcf = caller_vcf_path(bam, out_dir, "sniffles2")
     cmd = [
         "sniffles",
@@ -31,7 +31,7 @@ def run_sniffles2(bam, reference, out_dir, threads=4):
         "--allow-overwrite",
     ]
     run_command(cmd)
-    return out_vcf, cmd
+    return out_vcf, ToolRun(sample, "sniffles2", cmd)
 
 
 # The number of reads cuteSV needs to call an SV: a fraction of the sample's
@@ -50,7 +50,7 @@ def _remove_dir(path):
     shutil.rmtree(path, onerror=ignore_missing)
 
 
-def run_cutesv(bam, reference, out_dir, platform, min_support, threads=4):
+def run_cutesv(bam, sample, reference, out_dir, platform, min_support, threads=4):
     out_vcf = caller_vcf_path(bam, out_dir, "cutesv")
     # cuteSV won't start if an interrupted run left its working files behind, so
     # it gets a folder of its own that's cleared first.
@@ -71,7 +71,7 @@ def run_cutesv(bam, reference, out_dir, platform, min_support, threads=4):
     ]
     run_command(cmd)
     _remove_dir(work_dir)
-    return out_vcf, cmd
+    return out_vcf, ToolRun(sample, "cutesv", cmd)
 
 
 CALLERS = {

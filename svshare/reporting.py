@@ -33,6 +33,7 @@ def run(args):
     print(f"  sv-type: {args.sv_type}")
     print(f"  max-frequency: {args.max_frequency}")
     print(f"  min-samples: {args.min_samples}")
+    print(f"  near-reference-gap: {args.near_reference_gap}")
     if genes:
         print(f"  genes: {', '.join(genes)}")
     if args.region:
@@ -42,7 +43,7 @@ def run(args):
     sv_ids = filter_sv_ids(args.database, caller_support=args.caller_support,
                            min_samples=args.min_samples, sv_type=args.sv_type,
                            max_frequency=args.max_frequency, genes=genes,
-                           region=args.region)
+                           region=args.region, near_reference_gap=args.near_reference_gap)
     print(f"{len(sv_ids)} SVs pass the filters")
     if args.format == "tsv":
         write_tsv(load_svs(args.database, sv_ids), output)

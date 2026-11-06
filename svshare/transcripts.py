@@ -1,11 +1,10 @@
 # Find the transcripts near each SV and the parts of them each SV affects.
 import gzip
 import re
-import shlex
 import sqlite3
 from pathlib import Path
 
-from .commands import run_command
+from .commands import ToolRun, run_command
 
 # The GTF doesn't include promoters, so each transcript's promoter is taken to be
 # the PROMOTER_SIZE bp just upstream of its start.
@@ -166,7 +165,6 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
                "-wa", "-wb"]
         with open(overlaps_bed, "w") as f:
             run_command(cmd, stdout=f)
-        command = f"{shlex.join(cmd)} > {shlex.quote(str(overlaps_bed))}"
 
         # Each line is the SV window's 6 columns followed by the transcript
         # region's 11. Parts are stored with 1-based, inclusive positions, like
@@ -195,11 +193,7 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
             " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
             sorted(parts, key=lambda part: (part[0], part[1], part[4])),
         )
-        db.execute(
-            "INSERT INTO commands (sample, tool, command) VALUES (NULL, 'bedtools', ?)",
-            (command,),
-        )
         total = db.execute("SELECT COUNT(*) FROM svs").fetchone()[0]
     db.close()
     affected = {part[0] for part in parts if part[6]}
-    return command, len(affected), total
+    return ToolRun(None, "bedtools", cmd, overlaps_bed), len(affected), total

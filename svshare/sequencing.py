@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pysam
 
-from .commands import run_command
+from .commands import ToolRun, run_command
 
 PLATFORMS = ["hifi", "ont", "clr"]
 
@@ -56,9 +56,9 @@ def _autosome_depth(summary):
 
 
 # Measure a BAM's mean depth with mosdepth, writing its summary to out_dir.
-def mean_depth(bam, out_dir, threads=4):
+def mean_depth(bam, sample, out_dir, threads=4):
     prefix = Path(out_dir) / Path(bam).stem
     cmd = ["mosdepth", "--no-per-base", "--fast-mode", "--threads", str(threads),
            str(prefix), str(bam)]
     run_command(cmd)
-    return _autosome_depth(f"{prefix}.mosdepth.summary.txt"), cmd
+    return _autosome_depth(f"{prefix}.mosdepth.summary.txt"), ToolRun(sample, "mosdepth", cmd)

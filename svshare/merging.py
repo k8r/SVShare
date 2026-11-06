@@ -1,9 +1,10 @@
 # Wrappers around bcftools, which prepares each caller's VCF for merging, and
 # Jasmine, which merges SV calls from several VCFs into one VCF.
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
-from .commands import run_command
+from .commands import ToolRun, run_command
 
 # How close two calls must be for Jasmine to count them as the same SV. Set
 # here so they're recorded in the command.
@@ -17,13 +18,21 @@ JASMINE_SETTINGS = {
 }
 
 
+# One sample's VCF from one caller, without its 0/0 calls, ready to merge.
+@dataclass
+class VCFPreppedForMerging:
+    sample: str
+    caller: str
+    vcf: Path
+
+
 # Copy a caller's VCF into out_dir without its 0/0 calls, so Jasmine doesn't
 # merge them. A 0/0 genotype means the sample doesn't have the SV.
-def drop_0_0_calls(vcf, out_dir):
+def drop_0_0_calls(vcf, sample, out_dir):
     out_vcf = Path(out_dir) / f"{Path(vcf).stem}.called.vcf"
     cmd = ["bcftools", "view", "--exclude", 'GT="ref"', str(vcf), "-o", str(out_vcf)]
     run_command(cmd)
-    return out_vcf, cmd
+    return out_vcf, ToolRun(sample, "bcftools", cmd)
 
 
 # Merge the given VCFs into out_vcf.
@@ -47,7 +56,7 @@ def run_jasmine(vcfs, out_vcf, out_dir, threads=4):
         "--leave_breakpoints",
     ]
     # Bioconda's jasmine launcher is a bash script with no #! line, so it can't be
-    # executed directly from Python; run it with bash. The returned cmd stays the
-    # plain `jasmine ...` form, which works as-is from a terminal.
+    # executed directly from Python; run it with bash. The recorded command stays
+    # the plain `jasmine ...` form, which works as-is from a terminal.
     run_command(["bash", shutil.which("jasmine") or "jasmine", *cmd[1:]])
-    return out_vcf, cmd
+    return out_vcf, ToolRun(None, "jasmine", cmd)

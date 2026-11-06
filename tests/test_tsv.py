@@ -2,8 +2,9 @@ from svshare.svs import SV, Call, Gene
 from svshare.tsv import COLUMNS, _row, write_tsv
 
 
-def make_sv(calls=(), genes=()):
-    return SV(1, "chr2", 300, None, "INS", 50, None, 0.005, list(calls), list(genes))
+def make_sv(calls=(), genes=(), near_reference_gap=None):
+    return SV(1, "chr2", 300, None, "INS", 50, None, 0.005, list(calls), list(genes),
+              near_reference_gap)
 
 
 # Callers' genotypes are listed separately only where they differ, and unknown
@@ -57,13 +58,17 @@ def test_no_genes():
 
 def test_write_tsv(tmp_path):
     output = tmp_path / "report.tsv"
-    write_tsv([make_sv(
-        calls=[Call("HG002", "sniffles2", "0|1", 7)],
-        genes=[Gene("GENE1", "gene one", None, None, ["intron"])],
-    )], output)
-    header, row = output.read_text().splitlines()
+    write_tsv([
+        make_sv(calls=[Call("HG002", "sniffles2", "0|1", 7)],
+                genes=[Gene("GENE1", "gene one", None, None, ["intron"])],
+                near_reference_gap="350 bp from 20 unknown bases"),
+        make_sv(),
+    ], output)
+    header, first, second = output.read_text().splitlines()
     assert header.split("\t") == COLUMNS
-    assert row.split("\t") == [
-        "chr2", "300", "", "INS", "50", "HG002 (0|1)", "7 from sniffles2 for HG002", "7",
-        "sniffles2", "", "0.005", "GENE1 (intron)", "GENE1: gene one", "", "",
+    assert first.split("\t") == [
+        "1", "chr2", "300", "", "INS", "50", "HG002 (0|1)", "7 from sniffles2 for HG002",
+        "7", "350 bp from 20 unknown bases", "sniffles2", "", "0.005", "GENE1 (intron)",
+        "GENE1: gene one", "", "",
     ]
+    assert second.split("\t")[0] == "2"

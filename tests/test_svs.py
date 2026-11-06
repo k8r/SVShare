@@ -6,7 +6,8 @@ from svshare.svs import SV, Call, Gene, _chrom_order, load_svs
 
 # A database with three SVs:
 #   1  a DEL at chr10:500-600, called in HG002 and HG003
-#   2  an INS at chr2:300, in the UTR and an intron of GENE1, at 0.5% in CoLoRSdb
+#   2  an INS at chr2:300, in the UTR and an intron of GENE1, at 0.5% in CoLoRSdb,
+#      near a gap in the reference
 #   3  a BND at chr2:100 with its mate at 9000, overlapping GENE2's promoter and
 #      near GENE1, which it doesn't overlap
 def write_test_database(tmp_path):
@@ -14,11 +15,11 @@ def write_test_database(tmp_path):
     with sqlite3.connect(db_path) as db:
         db.executescript(SCHEMA)
         db.executemany(
-            "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [(1, "chr10", 500, 600, "DEL", -100, None, None),
-             (2, "chr2", 300, 300, "INS", 50, None, 0.005),
-             (3, "chr2", 100, 9000, "BND", 0, None, None)],
+            "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af,"
+            " near_reference_gap) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(1, "chr10", 500, 600, "DEL", -100, None, None, None),
+             (2, "chr2", 300, 300, "INS", 50, None, 0.005, "350 bp from 20 unknown bases"),
+             (3, "chr2", 100, 9000, "BND", 0, None, None, None)],
         )
         db.executemany(
             "INSERT INTO calls (sv_id, sample, caller, vcf_id, genotype, read_support)"
@@ -65,7 +66,8 @@ def test_load_svs(tmp_path):
            [Gene("GENE2", None, None, None, ["promoter"])]),
         SV(2, "chr2", 300, None, "INS", 50, None, 0.005,
            [Call("HG002", "cutesv", "0|1", 6), Call("HG002", "sniffles2", "0|1", 6)],
-           [Gene("GENE1", "gene one", "Sufficient evidence", None, ["UTR", "intron"])]),
+           [Gene("GENE1", "gene one", "Sufficient evidence", None, ["UTR", "intron"])],
+           "350 bp from 20 unknown bases"),
         SV(1, "chr10", 500, 600, "DEL", -100, None, None,
            [Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
             Call("HG003", "cutesv", "./.", None)],

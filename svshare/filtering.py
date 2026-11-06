@@ -89,9 +89,19 @@ def _region_condition(region):
     )
 
 
+# The --near-reference-gap filter, written in SQL: exclude or include SVs at or
+# near a gap in the reference, or keep only those.
+def _reference_gap_condition(near_reference_gap):
+    if near_reference_gap == "exclude":
+        return "near_reference_gap IS NULL", []
+    if near_reference_gap == "only":
+        return "near_reference_gap IS NOT NULL", []
+    return None
+
+
 # Return the IDs, in order, of the SVs in the database that pass the filters.
 def filter_sv_ids(db_path, caller_support="any", min_samples=1, sv_type="any",
-                  max_frequency=None, genes=None, region=None):
+                  max_frequency=None, genes=None, region=None, near_reference_gap="include"):
     conditions, params = [], []
     for condition in (
         _sample_support_condition(caller_support, min_samples),
@@ -99,6 +109,7 @@ def filter_sv_ids(db_path, caller_support="any", min_samples=1, sv_type="any",
         _max_frequency_condition(max_frequency),
         _genes_condition(genes),
         _region_condition(region),
+        _reference_gap_condition(near_reference_gap),
     ):
         if condition:
             conditions.append(condition[0])
