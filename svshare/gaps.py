@@ -5,7 +5,7 @@ import re
 
 import pysam
 
-from .database import connect, sv_positions
+from .database import save_reference_gaps, sv_positions
 from .svs import sv_end
 
 # The fewest N's in a row that count as a gap; shorter runs are usually just
@@ -57,12 +57,11 @@ def describe_nearest_gap(chrom_gaps, start, end, max_distance=MAX_DISTANCE):
 def add_reference_gaps(db_path, reference):
     gaps = find_gaps(reference)
     svs = sv_positions(db_path)
-    near = []
+    near = {}
     for sv in svs:
         description = describe_nearest_gap(gaps.get(sv.chrom, []), sv.pos,
                                            sv_end(sv.svtype, sv.pos, sv.end_pos))
         if description:
-            near.append((description, sv.sv_id))
-    with connect(db_path) as db:
-        db.executemany("UPDATE svs SET near_reference_gap = ? WHERE sv_id = ?", near)
+            near[sv.sv_id] = description
+    save_reference_gaps(db_path, near)
     return len(near), len(svs)

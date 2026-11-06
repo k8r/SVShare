@@ -217,6 +217,15 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
     return db_path
 
 
+# Save how close each SV in descriptions, by ID, is to a gap in the reference.
+def save_reference_gaps(db_path, descriptions):
+    with connect(db_path) as db:
+        db.executemany(
+            "UPDATE svs SET near_reference_gap = ? WHERE sv_id = ?",
+            [(description, sv_id) for sv_id, description in descriptions.items()],
+        )
+
+
 # Add each outside tool run to the database, in the order they ran.
 def save_tool_runs(db_path, tool_runs):
     with connect(db_path) as db:
