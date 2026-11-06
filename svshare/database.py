@@ -217,6 +217,16 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
     return db_path
 
 
+# Save the ID and allele frequency of the population dataset record each SV in
+# matches, by ID, matched. dataset is the prefix of its columns in svs.
+def save_population_matches(db_path, dataset, matches):
+    with connect(db_path) as db:
+        db.executemany(
+            f"UPDATE svs SET {dataset}_id = ?, {dataset}_af = ? WHERE sv_id = ?",
+            [(record_id, af, sv_id) for sv_id, (record_id, af) in matches.items()],
+        )
+
+
 # Save how close each SV in descriptions, by ID, is to a gap in the reference.
 def save_reference_gaps(db_path, descriptions):
     with connect(db_path) as db:

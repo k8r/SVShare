@@ -4,7 +4,7 @@ import math
 
 import pysam
 
-from .database import connect, sv_positions
+from .database import save_population_matches, sv_positions
 
 # The population datasets SVs can be looked up in, by the prefix of their
 # columns in the svs table (e.g. gnomad_af), with the name to show for each.
@@ -81,14 +81,11 @@ def add_population_frequencies(db_path, dataset, vcf_path):
     if dataset not in DATASETS:
         raise ValueError(f"Unknown population dataset: {dataset}")
     svs = sv_positions(db_path)
-    matches = []
+    matches = {}
     with pysam.VariantFile(str(vcf_path)) as vcf:
         for sv in svs:
             match = best_match(vcf, sv.chrom, sv.pos, sv.end_pos, sv.svtype, sv.svlen)
             if match:
-                matches.append((*match, sv.sv_id))
-    with connect(db_path) as db:
-        db.executemany(
-            f"UPDATE svs SET {dataset}_id = ?, {dataset}_af = ? WHERE sv_id = ?", matches
-        )
+                matches[sv.sv_id] = match
+    save_population_matches(db_path, dataset, matches)
     return len(matches), len(svs)
