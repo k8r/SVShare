@@ -1,10 +1,10 @@
 # Find the transcripts near each SV and the parts of them each SV affects.
 import gzip
 import re
-import sqlite3
 from pathlib import Path
 
 from .commands import ToolRun, run_command
+from .database import connect
 from .svs import sv_end
 
 # The GTF doesn't include promoters, so each transcript's promoter is taken to be
@@ -155,7 +155,7 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
                 for row in transcript_regions(gtf)
             )
 
-    with sqlite3.connect(db_path) as db:
+    with connect(db_path) as db:
         write_sv_windows_bed(db, windows_bed)
         cmd = ["bedtools", "intersect", "-a", str(windows_bed), "-b", str(regions_bed),
                "-wa", "-wb"]
@@ -190,6 +190,5 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
             sorted(parts, key=lambda part: (part[0], part[1], part[4])),
         )
         total = db.execute("SELECT COUNT(*) FROM svs").fetchone()[0]
-    db.close()
     affected = {part[0] for part in parts if part[6]}
     return ToolRun(None, "bedtools", cmd, overlaps_bed), len(affected), total

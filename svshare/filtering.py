@@ -1,7 +1,6 @@
 # Functions for choosing which SVs a report includes.
-import sqlite3
-
 from .callers import CALLERS
+from .database import connect
 from .genes import GENE_INFO, read_gene_symbols
 from .population import DATASETS
 
@@ -19,9 +18,8 @@ def parse_gene_list(genes, gene_file):
 # HGNC's plus the database's gene names, which include genes HGNC doesn't name.
 def find_unknown_genes(genes, db_path, gene_info=GENE_INFO):
     known = {symbol.upper() for symbol in read_gene_symbols(gene_info)}
-    with sqlite3.connect(db_path) as db:
+    with connect(db_path) as db:
         known.update(name.upper() for (name,) in db.execute("SELECT DISTINCT gene_name FROM transcripts"))
-    db.close()
     return [gene for gene in genes if gene.upper() not in known]
 
 
@@ -115,7 +113,6 @@ def filter_sv_ids(db_path, caller_support="any", min_samples=1, sv_type="any",
             conditions.append(condition[0])
             params += condition[1]
     where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
-    with sqlite3.connect(db_path) as db:
+    with connect(db_path) as db:
         sv_ids = [sv_id for (sv_id,) in db.execute(f"SELECT sv_id FROM svs{where} ORDER BY sv_id", params)]
-    db.close()
     return sv_ids

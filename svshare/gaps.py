@@ -2,10 +2,10 @@
 # as N's. Reads can't align to a gap, so SVs found there are often artifacts.
 import bisect
 import re
-import sqlite3
 
 import pysam
 
+from .database import connect
 from .svs import sv_end
 
 # The fewest N's in a row that count as a gap; shorter runs are usually just
@@ -56,7 +56,7 @@ def describe_nearest_gap(chrom_gaps, start, end, max_distance=MAX_DISTANCE):
 # close it is. Returns (SVs near a gap, total SVs).
 def add_reference_gaps(db_path, reference):
     gaps = find_gaps(reference)
-    with sqlite3.connect(db_path) as db:
+    with connect(db_path) as db:
         svs = db.execute("SELECT sv_id, chrom, pos, end_pos, svtype FROM svs").fetchall()
         near = []
         for sv_id, chrom, pos, end_pos, svtype in svs:
@@ -65,5 +65,4 @@ def add_reference_gaps(db_path, reference):
             if description:
                 near.append((description, sv_id))
         db.executemany("UPDATE svs SET near_reference_gap = ? WHERE sv_id = ?", near)
-    db.close()
     return len(near), len(svs)

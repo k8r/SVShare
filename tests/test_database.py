@@ -1,8 +1,10 @@
 import sqlite3
 from pathlib import Path
 
+import pytest
+
 from svshare.commands import ToolRun
-from svshare.database import save_tool_runs, write_database
+from svshare.database import connect, save_tool_runs, write_database
 from svshare.merging import VCFPreppedForMerging
 
 HEADER = "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n"
@@ -88,3 +90,22 @@ def test_save_tool_runs(tmp_path):
         ("HG002", "mosdepth", "mosdepth 'out prefix'"),
         (None, "bedtools", "bedtools intersect > overlaps.bed"),
     ]
+
+
+# Changes are saved, and the database is closed even when something fails.
+def test_connect_saves_and_closes(tmp_path):
+    db_path = tmp_path / "test.db"
+    with connect(db_path) as db:
+        db.execute("CREATE TABLE t (x INTEGER)")
+        db.execute("INSERT INTO t VALUES (1)")
+    with pytest.raises(sqlite3.ProgrammingError):
+        db.execute("SELECT 1")
+
+    with pytest.raises(ValueError):
+        with connect(db_path) as db:
+            db.execute("INSERT INTO t VALUES (2)")
+            raise ValueError
+    with pytest.raises(sqlite3.ProgrammingError):
+        db.execute("SELECT 1")
+    with connect(db_path) as db:
+        assert db.execute("SELECT x FROM t").fetchall() == [(1,)]

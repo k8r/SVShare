@@ -28,6 +28,7 @@
 # gnomAD and CoLoRSdb record, if any. near_reference_gap describes how close the
 # SV is to a gap in the reference, if it's at or near one.
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 SCHEMA = """
@@ -102,6 +103,17 @@ CREATE TABLE commands (
 """
 
 
+# Open the database, saving any changes and closing it when done.
+@contextmanager
+def connect(db_path):
+    db = sqlite3.connect(db_path)
+    try:
+        with db:
+            yield db
+    finally:
+        db.close()
+
+
 # Yield (id, chrom, pos, info, format_values) for each record in a VCF, where
 # info and format_values are dicts of the INFO and first sample's FORMAT fields.
 def read_vcf_records(vcf):
@@ -150,7 +162,7 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
 
     db_path = Path(db_path)
     db_path.unlink(missing_ok=True)
-    with sqlite3.connect(db_path) as db:
+    with connect(db_path) as db:
         db.executescript(SCHEMA)
 
         for sv_id, (chrom, pos, end_pos, svtype, svlen, members) in enumerate(
@@ -182,15 +194,13 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
                 " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 calls,
             )
-    db.close()
     return db_path
 
 
 # Add each outside tool run to the database, in the order they ran.
 def save_tool_runs(db_path, tool_runs):
-    with sqlite3.connect(db_path) as db:
+    with connect(db_path) as db:
         db.executemany(
             "INSERT INTO commands (sample, tool, command) VALUES (?, ?, ?)",
             [(tool_run.sample, tool_run.tool, str(tool_run)) for tool_run in tool_runs],
         )
-    db.close()

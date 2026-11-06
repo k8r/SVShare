@@ -1,9 +1,10 @@
 # Look up each SV in population SV datasets, gnomAD and CoLoRSdb, to see how
 # common it is. A record matches an SV when it's a compatible type and close enough.
 import math
-import sqlite3
 
 import pysam
+
+from .database import connect
 
 # The population datasets SVs can be looked up in, by the prefix of their
 # columns in the svs table (e.g. gnomad_af), with the name to show for each.
@@ -79,7 +80,7 @@ def best_match(vcf, chrom, pos, end, svtype, svlen):
 def add_population_frequencies(db_path, dataset, vcf_path):
     if dataset not in DATASETS:
         raise ValueError(f"Unknown population dataset: {dataset}")
-    with pysam.VariantFile(str(vcf_path)) as vcf, sqlite3.connect(db_path) as db:
+    with pysam.VariantFile(str(vcf_path)) as vcf, connect(db_path) as db:
         svs = db.execute("SELECT sv_id, chrom, pos, end_pos, svtype, svlen FROM svs").fetchall()
         matches = []
         for sv_id, *sv in svs:
@@ -89,5 +90,4 @@ def add_population_frequencies(db_path, dataset, vcf_path):
         db.executemany(
             f"UPDATE svs SET {dataset}_id = ?, {dataset}_af = ? WHERE sv_id = ?", matches
         )
-    db.close()
     return len(matches), len(svs)

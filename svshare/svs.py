@@ -1,6 +1,7 @@
 # The SVs analyze found, loaded from the database for reports.
-import sqlite3
 from dataclasses import dataclass
+
+from .database import connect
 
 # The order a gene's parts are listed in, roughly from upstream to downstream.
 REGION_ORDER = ["promoter", "UTR", "start_codon", "CDS", "stop_codon", "noncoding_exon", "intron"]
@@ -65,7 +66,7 @@ def _chrom_order(chrom):
 def load_svs(db_path, sv_ids):
     wanted = set(sv_ids)
     calls, regions = {}, {}
-    with sqlite3.connect(db_path) as db:
+    with connect(db_path) as db:
         for sv_id, sample, caller, genotype, read_support in db.execute(
             "SELECT sv_id, sample, caller, genotype, read_support FROM calls"
             " ORDER BY sample, caller"
@@ -85,7 +86,6 @@ def load_svs(db_path, sv_ids):
             "SELECT sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af,"
             " near_reference_gap FROM svs"
         ) if row[0] in wanted]
-    db.close()
 
     svs = []
     for (sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af,

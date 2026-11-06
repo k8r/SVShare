@@ -1,8 +1,9 @@
 # Functions for gene information: names, summaries, and ClinGen dosage
 # sensitivity scores.
 import csv
-import sqlite3
 from pathlib import Path
+
+from .database import connect
 
 GENE_INFO = Path(__file__).parent / "data" / "gene_info.tsv"
 
@@ -32,7 +33,7 @@ def read_gene_symbols(path=GENE_INFO):
 def add_genes(db_path, gene_info=GENE_INFO):
     info = read_gene_info(gene_info)
     rows = []
-    with sqlite3.connect(db_path) as db:
+    with connect(db_path) as db:
         for (gene_id,) in db.execute("SELECT DISTINCT gene_id FROM transcripts ORDER BY gene_id"):
             # GENCODE's gene IDs carry a version, e.g. ENSG00000159842.18.
             gene = info.get(gene_id.split(".")[0])
@@ -50,7 +51,6 @@ def add_genes(db_path, gene_info=GENE_INFO):
             " triplosensitivity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             rows,
         )
-    db.close()
     with_summary = sum(1 for row in rows if row[3])
     with_dosage = sum(1 for row in rows if row[5])
     return with_summary, with_dosage, len(rows)
