@@ -3,7 +3,7 @@
 import csv
 from pathlib import Path
 
-from .database import connect
+from .database import gene_ids, save_genes
 
 GENE_INFO = Path(__file__).parent / "data" / "gene_info.tsv"
 
@@ -33,24 +33,18 @@ def read_gene_symbols(path=GENE_INFO):
 def add_genes(db_path, gene_info=GENE_INFO):
     info = read_gene_info(gene_info)
     rows = []
-    with connect(db_path) as db:
-        for (gene_id,) in db.execute("SELECT DISTINCT gene_id FROM transcripts ORDER BY gene_id"):
-            # GENCODE's gene IDs carry a version, e.g. ENSG00000159842.18.
-            gene = info.get(gene_id.split(".")[0])
-            if gene is None:
-                rows.append((gene_id, None, None, None, None, None, None, None))
-                continue
-            rows.append((
-                gene_id, gene["hgnc_id"], gene["name"], gene["summary"] or None,
-                _score(gene["haploinsufficiency_score"]), gene["haploinsufficiency"] or None,
-                _score(gene["triplosensitivity_score"]), gene["triplosensitivity"] or None,
-            ))
-        db.executemany(
-            "INSERT INTO genes (gene_id, hgnc_id, full_name, summary,"
-            " haploinsufficiency_score, haploinsufficiency, triplosensitivity_score,"
-            " triplosensitivity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            rows,
-        )
+    for gene_id in gene_ids(db_path):
+        # GENCODE's gene IDs carry a version, e.g. ENSG00000159842.18.
+        gene = info.get(gene_id.split(".")[0])
+        if gene is None:
+            rows.append((gene_id, None, None, None, None, None, None, None))
+            continue
+        rows.append((
+            gene_id, gene["hgnc_id"], gene["name"], gene["summary"] or None,
+            _score(gene["haploinsufficiency_score"]), gene["haploinsufficiency"] or None,
+            _score(gene["triplosensitivity_score"]), gene["triplosensitivity"] or None,
+        ))
+    save_genes(db_path, rows)
     with_summary = sum(1 for row in rows if row[3])
     with_dosage = sum(1 for row in rows if row[5])
     return with_summary, with_dosage, len(rows)

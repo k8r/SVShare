@@ -134,6 +134,14 @@ def sv_positions(db_path):
         )]
 
 
+# Return the ID of every gene with a saved transcript, sorted.
+def gene_ids(db_path):
+    with connect(db_path) as db:
+        return [gene_id for (gene_id,) in db.execute(
+            "SELECT DISTINCT gene_id FROM transcripts ORDER BY gene_id"
+        )]
+
+
 # Yield (id, chrom, pos, info, format_values) for each record in a VCF, where
 # info and format_values are dicts of the INFO and first sample's FORMAT fields.
 def read_vcf_records(vcf):
@@ -215,6 +223,17 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
                 calls,
             )
     return db_path
+
+
+# Save each gene's names, summary, and dosage sensitivity scores.
+def save_genes(db_path, rows):
+    with connect(db_path) as db:
+        db.executemany(
+            "INSERT INTO genes (gene_id, hgnc_id, full_name, summary,"
+            " haploinsufficiency_score, haploinsufficiency, triplosensitivity_score,"
+            " triplosensitivity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            rows,
+        )
 
 
 # Save the transcripts near SVs, by ID, and the parts of them near each SV.
