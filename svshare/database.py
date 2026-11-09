@@ -217,6 +217,21 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
     return db_path
 
 
+# Save the transcripts near SVs, by ID, and the parts of them near each SV.
+def save_transcripts(db_path, transcripts, parts):
+    with connect(db_path) as db:
+        db.executemany(
+            "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
+            " mane_select, chrom, strand) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [(transcript_id, *values) for transcript_id, values in sorted(transcripts.items())],
+        )
+        db.executemany(
+            "INSERT INTO sv_transcript_parts (sv_id, transcript_id, region, number, pos,"
+            " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            sorted(parts, key=lambda part: (part[0], part[1], part[4])),
+        )
+
+
 # Save the ID and allele frequency of the population dataset record each SV in
 # matches, by ID, matched. dataset is the prefix of its columns in svs.
 def save_population_matches(db_path, dataset, matches):

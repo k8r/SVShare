@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 from .commands import ToolRun, run_command
-from .database import connect, sv_positions
+from .database import save_transcripts, sv_positions
 from .svs import sv_end
 
 # The GTF doesn't include promoters, so each transcript's promoter is taken to be
@@ -136,9 +136,8 @@ def write_sv_windows_bed(svs, path):
             f.write("\t".join(map(str, row)) + "\n")
 
 
-# Intersect the SV windows with the transcript regions from the GTF and save the
-# overlaps to the database. regions_bed, if given, is reused, or built if it
-# doesn't exist. Returns (bedtools command, SVs hitting a transcript, total SVs).
+# Save the transcripts near each SV and the parts of them it overlaps. Returns
+# (the bedtools run, SVs overlapping a transcript, total SVs).
 def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
     out_dir = Path(out_dir)
     windows_bed = out_dir / SV_WINDOWS_BED
@@ -155,38 +154,27 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
 
     svs = sv_positions(db_path)
     write_sv_windows_bed(svs, windows_bed)
-    with connect(db_path) as db:
-        cmd = ["bedtools", "intersect", "-a", str(windows_bed), "-b", str(regions_bed),
-               "-wa", "-wb"]
-        with open(overlaps_bed, "w") as f:
-            run_command(cmd, stdout=f)
+    cmd = ["bedtools", "intersect", "-a", str(windows_bed), "-b", str(regions_bed),
+           "-wa", "-wb"]
+    with open(overlaps_bed, "w") as f:
+        run_command(cmd, stdout=f)
 
-        # Each line is the SV window's 6 columns followed by the transcript
-        # region's 11. Parts are stored with 1-based, inclusive positions, like
-        # the rest of the database.
-        transcripts, parts = {}, set()
-        with open(overlaps_bed) as f:
-            for line in f:
-                fields = line.rstrip("\n").split("\t")
-                sv_id, sv_start, sv_end = int(fields[3]), int(fields[4]), int(fields[5])
-                (chrom, start, end, gene_name, gene_id, transcript_id, transcript_type,
-                 mane_select, region, number, strand) = fields[6:17]
-                start, end = int(start), int(end)
-                transcripts[transcript_id] = (gene_name, gene_id, transcript_type,
-                                              int(mane_select), chrom, strand)
-                parts.add((sv_id, transcript_id, region,
-                           None if number == "." else int(number), start + 1, end,
-                           int(start < sv_end and end > sv_start)))
+    # Each line is the SV window's 6 columns followed by the transcript
+    # region's 11. BED positions start at 0, but SVShare's start at 1.
+    transcripts, parts = {}, set()
+    with open(overlaps_bed) as f:
+        for line in f:
+            fields = line.rstrip("\n").split("\t")
+            sv_id, sv_start, sv_end = int(fields[3]), int(fields[4]), int(fields[5])
+            (chrom, start, end, gene_name, gene_id, transcript_id, transcript_type,
+             mane_select, region, number, strand) = fields[6:17]
+            start, end = int(start), int(end)
+            transcripts[transcript_id] = (gene_name, gene_id, transcript_type,
+                                          int(mane_select), chrom, strand)
+            parts.add((sv_id, transcript_id, region,
+                       None if number == "." else int(number), start + 1, end,
+                       int(start < sv_end and end > sv_start)))
 
-        db.executemany(
-            "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
-            " mane_select, chrom, strand) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [(transcript_id, *values) for transcript_id, values in sorted(transcripts.items())],
-        )
-        db.executemany(
-            "INSERT INTO sv_transcript_parts (sv_id, transcript_id, region, number, pos,"
-            " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            sorted(parts, key=lambda part: (part[0], part[1], part[4])),
-        )
+    save_transcripts(db_path, transcripts, parts)
     affected = {part[0] for part in parts if part[6]}
     return ToolRun(None, "bedtools", cmd, overlaps_bed), len(affected), len(svs)
