@@ -1,6 +1,6 @@
 # Functions for choosing which SVs a report includes.
 from .callers import CALLERS
-from .database import connect
+from .database import connect, gene_names
 from .genes import GENE_INFO, read_gene_symbols
 from .population import DATASETS
 
@@ -18,8 +18,7 @@ def parse_gene_list(genes, gene_file):
 # HGNC's plus the database's gene names, which include genes HGNC doesn't name.
 def find_unknown_genes(genes, db_path, gene_info=GENE_INFO):
     known = {symbol.upper() for symbol in read_gene_symbols(gene_info)}
-    with connect(db_path) as db:
-        known.update(name.upper() for (name,) in db.execute("SELECT DISTINCT gene_name FROM transcripts"))
+    known.update(name.upper() for name in gene_names(db_path))
     return [gene for gene in genes if gene.upper() not in known]
 
 

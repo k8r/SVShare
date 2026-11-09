@@ -142,6 +142,14 @@ def gene_ids(db_path):
         )]
 
 
+# Return the name of every gene with a saved transcript.
+def gene_names(db_path):
+    with connect(db_path) as db:
+        return {gene_name for (gene_name,) in db.execute(
+            "SELECT DISTINCT gene_name FROM transcripts"
+        )}
+
+
 # Yield (id, chrom, pos, info, format_values) for each record in a VCF, where
 # info and format_values are dicts of the INFO and first sample's FORMAT fields.
 def read_vcf_records(vcf):
