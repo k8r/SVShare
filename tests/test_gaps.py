@@ -1,8 +1,6 @@
-import sqlite3
-
 import pysam
 
-from helpers import make_database
+from helpers import make_database, read_rows
 from svshare.gaps import add_reference_gaps, describe_nearest_gap, find_gaps
 
 
@@ -43,8 +41,6 @@ def test_add_reference_gaps(tmp_path):
     ])
 
     assert add_reference_gaps(db_path, write_reference(tmp_path)) == (2, 4)
-    with sqlite3.connect(db_path) as db:
-        near = dict(db.execute("SELECT sv_id, near_reference_gap FROM svs"))
-    db.close()
-    assert near == {1: "overlaps 20 unknown bases", 2: "680 bp from 20 unknown bases",
-                    3: None, 4: None}
+    assert read_rows(db_path, "svs", "sv_id", "near_reference_gap") == [
+        (1, "overlaps 20 unknown bases"), (2, "680 bp from 20 unknown bases"), (3, None), (4, None),
+    ]

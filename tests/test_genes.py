@@ -1,6 +1,4 @@
-import sqlite3
-
-from helpers import make_database
+from helpers import make_database, read_rows
 from svshare.genes import add_genes
 
 HEADER = [
@@ -48,7 +46,7 @@ def test_add_genes_stores_info_for_each_gene_near_an_sv(tmp_path):
     ])
 
     assert add_genes(db_path, write_gene_info(tmp_path)) == (1, 1, 3)
-    assert sqlite3.connect(db_path).execute("SELECT * FROM genes ORDER BY gene_id").fetchall() == [
+    assert read_rows(db_path, "genes") == [
         ("ENSG01.5", "HGNC:1", "gene one", "Gene one does things.",
          3, "Sufficient evidence for dosage pathogenicity", None, "Not yet evaluated"),
         ("ENSG02.1", "HGNC:2", "gene two", None, None, None, None, None),

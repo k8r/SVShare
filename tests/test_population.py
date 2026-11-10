@@ -1,9 +1,7 @@
-import sqlite3
-
 import pysam
 import pytest
 
-from helpers import make_database
+from helpers import make_database, read_rows
 from svshare.population import add_population_frequencies, best_match
 
 # SVLEN is declared Number=1 in gnomAD and Number=. in CoLoRSdb.
@@ -80,7 +78,6 @@ def test_add_population_frequencies_fills_matched_svs_only(tmp_path):
     ])
 
     assert add_population_frequencies(db_path, "gnomad", tmp_path / "population.vcf.gz") == (1, 3)
-    rows = sqlite3.connect(db_path).execute(
-        "SELECT sv_id, gnomad_id, gnomad_af FROM svs ORDER BY sv_id"
-    ).fetchall()
-    assert rows == [(1, "del", 0.25), (2, None, None), (3, None, None)]
+    assert read_rows(db_path, "svs", "sv_id", "gnomad_id", "gnomad_af") == [
+        (1, "del", 0.25), (2, None, None), (3, None, None),
+    ]

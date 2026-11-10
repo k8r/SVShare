@@ -1,7 +1,6 @@
 import gzip
-import sqlite3
 
-from helpers import make_database
+from helpers import make_database, read_rows
 from svshare.database import sv_positions
 from svshare.transcripts import add_sv_transcripts, transcript_regions, write_sv_windows_bed
 
@@ -139,14 +138,11 @@ def test_add_sv_transcripts_stores_parts_around_each_sv(tmp_path):
     _command, affected, total = add_sv_transcripts(db_path, write_gtf(tmp_path), tmp_path)
 
     assert (affected, total) == (1, 2)
-    db = sqlite3.connect(db_path)
-    assert db.execute("SELECT * FROM transcripts ORDER BY transcript_id").fetchall() == [
+    assert read_rows(db_path, "transcripts") == [
         ("T1", "GENE1", "GENE1_ID", "protein_coding", 1, "chr1", "+"),
         ("T1b", "GENE1", "GENE1_ID", "lncRNA", 0, "chr1", "+"),
     ]
-    assert db.execute(
-        "SELECT * FROM sv_transcript_parts ORDER BY sv_id, transcript_id, pos"
-    ).fetchall() == [
+    assert read_rows(db_path, "sv_transcript_parts") == [
         (1, "T1", "promoter", None, 1, 1000, 0),
         (1, "T1", "UTR", 1, 1001, 1200, 0),
         (1, "T1", "start_codon", 1, 1201, 1203, 0),
@@ -168,9 +164,9 @@ def test_add_sv_transcripts_reuses_existing_regions_bed(tmp_path):
 
     add_sv_transcripts(db_path, tmp_path / "missing.gtf.gz", tmp_path, regions_bed)
 
-    assert sqlite3.connect(db_path).execute(
-        "SELECT sv_id, transcript_id, region, number, overlaps_sv FROM sv_transcript_parts"
-    ).fetchall() == [(1, "T1", "CDS", 1, 1)]
+    assert read_rows(
+        db_path, "sv_transcript_parts", "sv_id", "transcript_id", "region", "number", "overlaps_sv"
+    ) == [(1, "T1", "CDS", 1, 1)]
 
 
 # Checks that an insertion covers just its position, even with cuteSV's END of

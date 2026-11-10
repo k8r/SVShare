@@ -1,5 +1,3 @@
-import sqlite3
-
 from helpers import make_database
 from svshare.callers import CALLERS
 from svshare.database import SVFilter, select_sv_ids
@@ -40,7 +38,8 @@ def test_no_genes_or_gene_file_returns_empty_list():
 #   1  a DEL at chr1:1000-2000 called only by sniffles2, in neither population
 #      database, overlapping an intron of GENE1
 #   2  an INS at chr1:5000 called only by cuteSV (in two samples), at 1% in
-#      gnomAD, near GENE1's promoter but not overlapping it
+#      gnomAD, near GENE1's promoter but not overlapping it, and near a gap in
+#      the reference
 #   3  a DEL at chr2:1000-3000 called by both callers in the same sample, at 20%
 #      in CoLoRSdb, overlapping GENE2's promoter
 #   4  a BND at chr1:8000 called by both callers in different samples, at 2% in
@@ -50,7 +49,8 @@ def write_test_database(tmp_path):
         tmp_path,
         svs=[
             dict(sv_id=1, chrom="chr1", pos=1000, end_pos=2000, svtype="DEL"),
-            dict(sv_id=2, chrom="chr1", pos=5000, end_pos=5001, svtype="INS", gnomad_af=0.01),
+            dict(sv_id=2, chrom="chr1", pos=5000, end_pos=5001, svtype="INS", gnomad_af=0.01,
+                 near_reference_gap="overlaps 20 unknown bases"),
             dict(sv_id=3, chrom="chr2", pos=1000, end_pos=3000, svtype="DEL", colorsdb_af=0.2),
             # A breakend's END is its mate's position, so it's before pos here.
             dict(sv_id=4, chrom="chr1", pos=8000, end_pos=100, svtype="BND", gnomad_af=0.02,
@@ -178,10 +178,6 @@ def test_find_unknown_genes_returns_unknown_symbols(tmp_path):
 
 def test_near_reference_gap_keeps_only_those_svs_or_only_the_rest(tmp_path):
     db_path = write_test_database(tmp_path)
-    with sqlite3.connect(db_path) as db:
-        db.execute("UPDATE svs SET near_reference_gap = 'overlaps 20 unknown bases'"
-                   " WHERE sv_id = 2")
-    db.close()
     assert select_sv_ids(db_path, SVFilter(near_reference_gap=True)) == [2]
     assert select_sv_ids(db_path, SVFilter(near_reference_gap=False)) == [1, 3, 4]
 
