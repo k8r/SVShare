@@ -45,10 +45,10 @@ class SV:
 
 # Where an SV ends: at its position if it's an insertion or breakend or has no
 # end, otherwise at its end.
-def sv_end(svtype, pos, end_pos):
-    if svtype in POINT_TYPES or end_pos is None:
+def sv_end(svtype, pos, vcf_end):
+    if svtype in POINT_TYPES or vcf_end is None:
         return pos
-    return max(end_pos, pos)
+    return max(vcf_end, pos)
 
 
 # Sort key for chromosomes: numbered ones in number order, then X, Y, and M,
@@ -83,12 +83,12 @@ def load_svs(db_path, sv_ids):
             "SELECT gene_id, full_name, haploinsufficiency, triplosensitivity FROM genes"
         )}
         rows = [row for row in db.execute(
-            "SELECT sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af,"
+            "SELECT sv_id, chrom, pos, vcf_end, svtype, svlen, gnomad_af, colorsdb_af,"
             " near_reference_gap FROM svs"
         ) if row[0] in wanted]
 
     svs = []
-    for (sv_id, chrom, pos, end_pos, svtype, svlen, gnomad_af, colorsdb_af,
+    for (sv_id, chrom, pos, vcf_end, svtype, svlen, gnomad_af, colorsdb_af,
          near_reference_gap) in rows:
         genes = [
             Gene(name, *gene_info.get(gene_id, (None, None, None)),
@@ -97,7 +97,7 @@ def load_svs(db_path, sv_ids):
         ]
         svs.append(SV(
             sv_id, chrom, pos,
-            None if svtype in POINT_TYPES else end_pos,
+            None if svtype in POINT_TYPES else vcf_end,
             svtype, svlen, gnomad_af, colorsdb_af, calls.get(sv_id, []), genes,
             near_reference_gap,
         ))

@@ -12,10 +12,10 @@ def write_test_database(tmp_path):
     return make_database(
         tmp_path,
         svs=[
-            dict(sv_id=1, chrom="chr10", pos=500, end_pos=600, svtype="DEL", svlen=-100),
-            dict(sv_id=2, chrom="chr2", pos=300, end_pos=300, svtype="INS", svlen=50,
+            dict(sv_id=1, chrom="chr10", pos=500, vcf_end=600, svtype="DEL", svlen=-100),
+            dict(sv_id=2, chrom="chr2", pos=300, vcf_end=300, svtype="INS", svlen=50,
                  colorsdb_af=0.005, near_reference_gap="350 bp from 20 unknown bases"),
-            dict(sv_id=3, chrom="chr2", pos=100, end_pos=9000, svtype="BND", svlen=0),
+            dict(sv_id=3, chrom="chr2", pos=100, vcf_end=9000, svtype="BND", svlen=0),
         ],
         calls=[
             dict(sv_id=1, sample="HG002", caller="cutesv", vcf_id="a", genotype="1/1",

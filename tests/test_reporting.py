@@ -48,12 +48,12 @@ def write_test_database(tmp_path):
     return make_database(
         tmp_path,
         svs=[
-            dict(sv_id=1, chrom="chr1", pos=1000, end_pos=2000, svtype="DEL"),
-            dict(sv_id=2, chrom="chr1", pos=5000, end_pos=5001, svtype="INS", gnomad_af=0.01,
+            dict(sv_id=1, chrom="chr1", pos=1000, vcf_end=2000, svtype="DEL"),
+            dict(sv_id=2, chrom="chr1", pos=5000, vcf_end=5001, svtype="INS", gnomad_af=0.01,
                  near_reference_gap="overlaps 20 unknown bases"),
-            dict(sv_id=3, chrom="chr2", pos=1000, end_pos=3000, svtype="DEL", colorsdb_af=0.2),
+            dict(sv_id=3, chrom="chr2", pos=1000, vcf_end=3000, svtype="DEL", colorsdb_af=0.2),
             # A breakend's END is its mate's position, so it's before pos here.
-            dict(sv_id=4, chrom="chr1", pos=8000, end_pos=100, svtype="BND", gnomad_af=0.02,
+            dict(sv_id=4, chrom="chr1", pos=8000, vcf_end=100, svtype="BND", gnomad_af=0.02,
                  colorsdb_af=0.001),
         ],
         transcripts=[

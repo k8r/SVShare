@@ -155,7 +155,7 @@ def test_write_database_has_one_sv_per_jasmine_record(tmp_path):
     merged_vcf, prepped_vcfs = write_merge_vcfs(tmp_path)
     db_path = write_database(merged_vcf, prepped_vcfs, tmp_path / "svshare.db")
 
-    columns = ("sv_id", "chrom", "pos", "end_pos", "svtype", "svlen",
+    columns = ("sv_id", "chrom", "pos", "vcf_end", "svtype", "svlen",
                "start_spread", "length_spread")
     assert read_rows(db_path, "svs", *columns) == [
         (1, "chr1", 1000, 1150, "DEL", -150, 10, 10),

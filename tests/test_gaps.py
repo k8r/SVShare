@@ -34,10 +34,10 @@ def test_describe_nearest_gap():
 # isn't where they end.
 def test_add_reference_gaps(tmp_path):
     db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=50, end_pos=150, svtype="DEL"),
-        dict(sv_id=2, chrom="chr1", pos=800, end_pos=5000, svtype="INS"),
-        dict(sv_id=3, chrom="chr1", pos=1200, end_pos=1200, svtype="INS"),
-        dict(sv_id=4, chrom="chr3", pos=10, end_pos=20, svtype="DEL"),
+        dict(sv_id=1, chrom="chr1", pos=50, vcf_end=150, svtype="DEL"),
+        dict(sv_id=2, chrom="chr1", pos=800, vcf_end=5000, svtype="INS"),
+        dict(sv_id=3, chrom="chr1", pos=1200, vcf_end=1200, svtype="INS"),
+        dict(sv_id=4, chrom="chr3", pos=10, vcf_end=20, svtype="DEL"),
     ])
 
     assert add_reference_gaps(db_path, write_reference(tmp_path)) == (2, 4)

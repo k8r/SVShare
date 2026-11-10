@@ -72,9 +72,9 @@ def test_best_match_accepts_records_without_filter_or_id(tmp_path):
 def test_add_population_frequencies_fills_matched_svs_only(tmp_path):
     write_population_vcf(tmp_path, [("del", 1000, "PASS", "DEL", 1150, 150, 0.25)])
     db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=1000, end_pos=1150, svtype="DEL", svlen=-150),
-        dict(sv_id=2, chrom="chr1", pos=50000, end_pos=50150, svtype="DEL", svlen=-150),
-        dict(sv_id=3, chrom="chr1", pos=1000, end_pos=1000, svtype="BND"),
+        dict(sv_id=1, chrom="chr1", pos=1000, vcf_end=1150, svtype="DEL", svlen=-150),
+        dict(sv_id=2, chrom="chr1", pos=50000, vcf_end=50150, svtype="DEL", svlen=-150),
+        dict(sv_id=3, chrom="chr1", pos=1000, vcf_end=1000, svtype="BND"),
     ])
 
     assert add_population_frequencies(db_path, "gnomad", tmp_path / "population.vcf.gz") == (1, 3)

@@ -129,7 +129,7 @@ def write_sv_windows_bed(svs, path):
     with open(path, "w") as f:
         for sv in svs:
             start = sv.pos - 1
-            end = sv_end(sv.svtype, sv.pos, sv.end_pos)
+            end = sv_end(sv.svtype, sv.pos, sv.vcf_end)
             margin = max(MIN_VIEW_MARGIN, round(VIEW_MARGIN_FRACTION * (end - start)))
             window_start, window_end = max(0, start - margin), end + margin
             row = (sv.chrom, window_start, window_end, sv.sv_id, start, end)

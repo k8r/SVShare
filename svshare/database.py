@@ -23,7 +23,7 @@
 # plus the SV's start_spread and length_spread (max - min across its calls, in bp),
 # so the matching can later be made stricter without rerunning Jasmine.
 #
-# An SV's pos, end_pos, and svlen are those of the call Jasmine kept. The
+# An SV's pos, vcf_end, and svlen are those of the call Jasmine kept. The
 # gnomad_ and colorsdb_ columns hold the ID and allele frequency of the matching
 # gnomAD and CoLoRSdb record, if any. near_reference_gap describes how close the
 # SV is to a gap in the reference, if it's at or near one.
@@ -37,7 +37,7 @@ CREATE TABLE svs (
     sv_id INTEGER PRIMARY KEY,
     chrom TEXT,
     pos INTEGER,
-    end_pos INTEGER,
+    vcf_end INTEGER,
     svtype TEXT,
     svlen INTEGER,
     start_spread INTEGER,
@@ -56,7 +56,7 @@ CREATE TABLE calls (
     vcf_id TEXT NOT NULL,
     chrom TEXT,
     pos INTEGER,
-    end_pos INTEGER,
+    vcf_end INTEGER,
     svtype TEXT,
     svlen INTEGER,
     genotype TEXT,
@@ -110,7 +110,7 @@ class SVPosition:
     sv_id: int
     chrom: str
     pos: int
-    end_pos: int | None
+    vcf_end: int | None
     svtype: str
     svlen: int | None
 
@@ -147,7 +147,7 @@ def connect(db_path):
 def sv_positions(db_path):
     with connect(db_path) as db:
         return [SVPosition(*row) for row in db.execute(
-            "SELECT sv_id, chrom, pos, end_pos, svtype, svlen FROM svs"
+            "SELECT sv_id, chrom, pos, vcf_end, svtype, svlen FROM svs"
         )]
 
 
@@ -216,7 +216,7 @@ def _region_condition(region):
     # start position is checked.
     return (
         "chrom = ? AND pos <= ?"
-        " AND (CASE WHEN svtype IN ('INS', 'BND') THEN pos ELSE MAX(end_pos, pos) END) >= ?",
+        " AND (CASE WHEN svtype IN ('INS', 'BND') THEN pos ELSE MAX(vcf_end, pos) END) >= ?",
         [chrom, end, start],
     )
 
@@ -272,7 +272,7 @@ def _int_or_none(value):
         return None
 
 
-# For each record in Jasmine's merged VCF, yield (chrom, pos, end_pos, svtype,
+# For each record in Jasmine's merged VCF, yield (chrom, pos, vcf_end, svtype,
 # svlen, members), where members lists the (input index, call ID) pairs merged
 # into it. SUPP_VEC has one digit per input VCF, in file_list order, and IDLIST
 # names the merged calls in that same order.
@@ -298,7 +298,7 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
     with connect(db_path) as db:
         db.executescript(SCHEMA)
 
-        for sv_id, (chrom, pos, end_pos, svtype, svlen, members) in enumerate(
+        for sv_id, (chrom, pos, vcf_end, svtype, svlen, members) in enumerate(
             read_jasmine_groups(merged_vcf), start=1
         ):
             calls = []
@@ -316,13 +316,13 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
             starts = [call[5] for call in calls]
             lengths = [abs(call[8]) for call in calls if call[8] is not None]
             db.execute(
-                "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype, svlen, start_spread,"
+                "INSERT INTO svs (sv_id, chrom, pos, vcf_end, svtype, svlen, start_spread,"
                 " length_spread) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (sv_id, chrom, pos, end_pos, svtype, svlen, max(starts) - min(starts),
+                (sv_id, chrom, pos, vcf_end, svtype, svlen, max(starts) - min(starts),
                  max(lengths) - min(lengths) if lengths else None),
             )
             db.executemany(
-                "INSERT INTO calls (sv_id, sample, caller, vcf_id, chrom, pos, end_pos,"
+                "INSERT INTO calls (sv_id, sample, caller, vcf_id, chrom, pos, vcf_end,"
                 " svtype, svlen, genotype, read_support)"
                 " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 calls,

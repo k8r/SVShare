@@ -131,8 +131,8 @@ def test_transcript_regions_splits_a_codon_split_across_exons(tmp_path):
 #   - the second deletion gets no rows
 def test_add_sv_transcripts_stores_parts_around_each_sv(tmp_path):
     db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=1501, end_pos=2500, svtype="DEL"),
-        dict(sv_id=2, chrom="chr1", pos=50001, end_pos=50100, svtype="DEL"),
+        dict(sv_id=1, chrom="chr1", pos=1501, vcf_end=2500, svtype="DEL"),
+        dict(sv_id=2, chrom="chr1", pos=50001, vcf_end=50100, svtype="DEL"),
     ])
 
     _command, affected, total = add_sv_transcripts(db_path, write_gtf(tmp_path), tmp_path)
@@ -157,7 +157,7 @@ def test_add_sv_transcripts_stores_parts_around_each_sv(tmp_path):
 # Checks that an existing regions BED is reused instead of rebuilt from the GTF.
 def test_add_sv_transcripts_reuses_existing_regions_bed(tmp_path):
     db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=1501, end_pos=1600, svtype="DEL"),
+        dict(sv_id=1, chrom="chr1", pos=1501, vcf_end=1600, svtype="DEL"),
     ])
     regions_bed = tmp_path / "regions.bed"
     regions_bed.write_text("\t".join(map(str, ("chr1", 1200, 2000, *T1, "CDS", 1, "+"))) + "\n")
@@ -173,8 +173,8 @@ def test_add_sv_transcripts_reuses_existing_regions_bed(tmp_path):
 # POS + 1, while a deletion covers its whole span.
 def test_write_sv_windows_bed_treats_insertions_as_points(tmp_path):
     db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=5000, end_pos=5001, svtype="INS"),
-        dict(sv_id=2, chrom="chr1", pos=9001, end_pos=13000, svtype="DEL"),
+        dict(sv_id=1, chrom="chr1", pos=5000, vcf_end=5001, svtype="INS"),
+        dict(sv_id=2, chrom="chr1", pos=9001, vcf_end=13000, svtype="DEL"),
     ])
     windows_bed = tmp_path / "windows.bed"
 
