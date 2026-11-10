@@ -2,7 +2,7 @@ import sqlite3
 
 import pysam
 
-from svshare.database import SCHEMA
+from helpers import make_database
 from svshare.gaps import add_reference_gaps, describe_nearest_gap, find_gaps
 
 
@@ -35,15 +35,12 @@ def test_describe_nearest_gap():
 # Insertions are checked at their position only, since their end position
 # isn't where they end.
 def test_add_reference_gaps(tmp_path):
-    db_path = tmp_path / "svshare.db"
-    with sqlite3.connect(db_path) as db:
-        db.executescript(SCHEMA)
-        db.executemany(
-            "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype) VALUES (?, ?, ?, ?, ?)",
-            [(1, "chr1", 50, 150, "DEL"), (2, "chr1", 800, 5000, "INS"),
-             (3, "chr1", 1200, 1200, "INS"), (4, "chr3", 10, 20, "DEL")],
-        )
-    db.close()
+    db_path = make_database(tmp_path, svs=[
+        dict(sv_id=1, chrom="chr1", pos=50, end_pos=150, svtype="DEL"),
+        dict(sv_id=2, chrom="chr1", pos=800, end_pos=5000, svtype="INS"),
+        dict(sv_id=3, chrom="chr1", pos=1200, end_pos=1200, svtype="INS"),
+        dict(sv_id=4, chrom="chr3", pos=10, end_pos=20, svtype="DEL"),
+    ])
 
     assert add_reference_gaps(db_path, write_reference(tmp_path)) == (2, 4)
     with sqlite3.connect(db_path) as db:

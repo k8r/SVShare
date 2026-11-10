@@ -1,7 +1,8 @@
 import gzip
 import sqlite3
 
-from svshare.database import SCHEMA, sv_positions
+from helpers import make_database
+from svshare.database import sv_positions
 from svshare.transcripts import add_sv_transcripts, transcript_regions, write_sv_windows_bed
 
 MANE = 'tag "basic"; tag "MANE_Select";'
@@ -58,15 +59,6 @@ def write_gtf(tmp_path, records=GTF_RECORDS):
                 f'transcript_type "{type_}"; {exon_number}{tags}\n'
             )
     return path
-
-
-def create_database(db_path, svs):
-    with sqlite3.connect(db_path) as db:
-        db.executescript(SCHEMA)
-        db.executemany(
-            "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype) VALUES (?, ?, ?, ?, ?)", svs
-        )
-    db.close()
 
 
 # Checks every BED row built from GTF_RECORDS. The cases it covers:
@@ -139,8 +131,10 @@ def test_transcript_regions_splits_a_codon_split_across_exons(tmp_path):
 #     piece, T1's intron, T1b's promoter, and T1b's exon
 #   - the second deletion gets no rows
 def test_add_sv_transcripts_stores_parts_around_each_sv(tmp_path):
-    db_path = tmp_path / "svshare.db"
-    create_database(db_path, [(1, "chr1", 1501, 2500, "DEL"), (2, "chr1", 50001, 50100, "DEL")])
+    db_path = make_database(tmp_path, svs=[
+        dict(sv_id=1, chrom="chr1", pos=1501, end_pos=2500, svtype="DEL"),
+        dict(sv_id=2, chrom="chr1", pos=50001, end_pos=50100, svtype="DEL"),
+    ])
 
     _command, affected, total = add_sv_transcripts(db_path, write_gtf(tmp_path), tmp_path)
 
@@ -166,8 +160,9 @@ def test_add_sv_transcripts_stores_parts_around_each_sv(tmp_path):
 
 # Checks that an existing regions BED is reused instead of rebuilt from the GTF.
 def test_add_sv_transcripts_reuses_existing_regions_bed(tmp_path):
-    db_path = tmp_path / "svshare.db"
-    create_database(db_path, [(1, "chr1", 1501, 1600, "DEL")])
+    db_path = make_database(tmp_path, svs=[
+        dict(sv_id=1, chrom="chr1", pos=1501, end_pos=1600, svtype="DEL"),
+    ])
     regions_bed = tmp_path / "regions.bed"
     regions_bed.write_text("\t".join(map(str, ("chr1", 1200, 2000, *T1, "CDS", 1, "+"))) + "\n")
 
@@ -181,8 +176,10 @@ def test_add_sv_transcripts_reuses_existing_regions_bed(tmp_path):
 # Checks that an insertion covers just its position, even with cuteSV's END of
 # POS + 1, while a deletion covers its whole span.
 def test_write_sv_windows_bed_treats_insertions_as_points(tmp_path):
-    db_path = tmp_path / "svshare.db"
-    create_database(db_path, [(1, "chr1", 5000, 5001, "INS"), (2, "chr1", 9001, 13000, "DEL")])
+    db_path = make_database(tmp_path, svs=[
+        dict(sv_id=1, chrom="chr1", pos=5000, end_pos=5001, svtype="INS"),
+        dict(sv_id=2, chrom="chr1", pos=9001, end_pos=13000, svtype="DEL"),
+    ])
     windows_bed = tmp_path / "windows.bed"
 
     write_sv_windows_bed(sv_positions(db_path), windows_bed)

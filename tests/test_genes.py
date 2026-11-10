@@ -1,6 +1,6 @@
 import sqlite3
 
-from svshare.database import SCHEMA
+from helpers import make_database
 from svshare.genes import add_genes
 
 HEADER = [
@@ -36,16 +36,16 @@ def write_gene_info(tmp_path):
 #   GENE2  its name only, since the file has no summary or scores for it
 #   GENE3  only its ID, since it isn't in the file
 def test_add_genes_stores_info_for_each_gene_near_an_sv(tmp_path):
-    db_path = tmp_path / "svshare.db"
-    with sqlite3.connect(db_path) as db:
-        db.executescript(SCHEMA)
-        db.executemany(
-            "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
-            " mane_select, chrom, strand) VALUES (?, ?, ?, 'protein_coding', 1, 'chr1', '+')",
-            [("T1", "GENE1", "ENSG01.5"), ("T1b", "GENE1", "ENSG01.5"),
-             ("T2", "GENE2", "ENSG02.1"), ("T3", "GENE3", "ENSG03.2")],
-        )
-    db.close()
+    db_path = make_database(tmp_path, transcripts=[
+        dict(transcript_id="T1", gene_name="GENE1", gene_id="ENSG01.5",
+             transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
+        dict(transcript_id="T1b", gene_name="GENE1", gene_id="ENSG01.5",
+             transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
+        dict(transcript_id="T2", gene_name="GENE2", gene_id="ENSG02.1",
+             transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
+        dict(transcript_id="T3", gene_name="GENE3", gene_id="ENSG03.2",
+             transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
+    ])
 
     assert add_genes(db_path, write_gene_info(tmp_path)) == (1, 1, 3)
     assert sqlite3.connect(db_path).execute("SELECT * FROM genes ORDER BY gene_id").fetchall() == [

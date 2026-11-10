@@ -3,7 +3,7 @@ import sqlite3
 import pysam
 import pytest
 
-from svshare.database import SCHEMA
+from helpers import make_database
 from svshare.population import add_population_frequencies, best_match
 
 # SVLEN is declared Number=1 in gnomAD and Number=. in CoLoRSdb.
@@ -73,16 +73,11 @@ def test_best_match_accepts_records_without_filter_or_id(tmp_path):
 # including a BND, which isn't looked up, are left NULL.
 def test_add_population_frequencies_fills_matched_svs_only(tmp_path):
     write_population_vcf(tmp_path, [("del", 1000, "PASS", "DEL", 1150, 150, 0.25)])
-    db_path = tmp_path / "svshare.db"
-    with sqlite3.connect(db_path) as db:
-        db.executescript(SCHEMA)
-        db.executemany(
-            "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype, svlen) VALUES (?, ?, ?, ?, ?, ?)",
-            [(1, "chr1", 1000, 1150, "DEL", -150),
-             (2, "chr1", 50000, 50150, "DEL", -150),
-             (3, "chr1", 1000, 1000, "BND", None)],
-        )
-    db.close()
+    db_path = make_database(tmp_path, svs=[
+        dict(sv_id=1, chrom="chr1", pos=1000, end_pos=1150, svtype="DEL", svlen=-150),
+        dict(sv_id=2, chrom="chr1", pos=50000, end_pos=50150, svtype="DEL", svlen=-150),
+        dict(sv_id=3, chrom="chr1", pos=1000, end_pos=1000, svtype="BND"),
+    ])
 
     assert add_population_frequencies(db_path, "gnomad", tmp_path / "population.vcf.gz") == (1, 3)
     rows = sqlite3.connect(db_path).execute(

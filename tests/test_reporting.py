@@ -1,7 +1,8 @@
 import sqlite3
 
+from helpers import make_database
 from svshare.callers import CALLERS
-from svshare.database import SCHEMA, SVFilter, select_sv_ids
+from svshare.database import SVFilter, select_sv_ids
 from svshare.population import DATASETS
 from svshare.reporting import find_unknown_genes, make_sv_filter, parse_gene_list
 
@@ -45,39 +46,40 @@ def test_no_genes_or_gene_file_returns_empty_list():
 #   4  a BND at chr1:8000 called by both callers in different samples, at 2% in
 #      gnomAD and 0.1% in CoLoRSdb
 def write_test_database(tmp_path):
-    db_path = tmp_path / "svshare.db"
-    with sqlite3.connect(db_path) as db:
-        db.executescript(SCHEMA)
-        db.executemany(
-            "INSERT INTO svs (sv_id, chrom, pos, end_pos, svtype, gnomad_af, colorsdb_af)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [(1, "chr1", 1000, 2000, "DEL", None, None),
-             (2, "chr1", 5000, 5001, "INS", 0.01, None),
-             (3, "chr2", 1000, 3000, "DEL", None, 0.2),
-             # A breakend's END is its mate's position, so it's before pos here.
-             (4, "chr1", 8000, 100, "BND", 0.02, 0.001)],
-        )
-        db.executemany(
-            "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
-            " mane_select, chrom, strand) VALUES (?, ?, ?, 'protein_coding', 1, ?, '+')",
-            [("T1", "GENE1", "G1", "chr1"), ("T2", "GENE2", "G2", "chr2")],
-        )
-        db.executemany(
-            "INSERT INTO sv_transcript_parts (sv_id, transcript_id, region, number, pos,"
-            " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [(1, "T1", "intron", 1, 1500, 2500, 1),
-             (2, "T1", "promoter", None, 5500, 7499, 0),
-             (3, "T2", "promoter", None, 2500, 4499, 1)],
-        )
-        db.executemany(
-            "INSERT INTO calls (sv_id, sample, caller, vcf_id) VALUES (?, ?, ?, ?)",
-            [(1, "HG002", "sniffles2", "a"),
-             (2, "HG002", "cutesv", "b"), (2, "HG003", "cutesv", "c"),
-             (3, "HG002", "sniffles2", "d"), (3, "HG002", "cutesv", "e"),
-             (4, "HG002", "sniffles2", "f"), (4, "HG003", "cutesv", "g")],
-        )
-    db.close()
-    return db_path
+    return make_database(
+        tmp_path,
+        svs=[
+            dict(sv_id=1, chrom="chr1", pos=1000, end_pos=2000, svtype="DEL"),
+            dict(sv_id=2, chrom="chr1", pos=5000, end_pos=5001, svtype="INS", gnomad_af=0.01),
+            dict(sv_id=3, chrom="chr2", pos=1000, end_pos=3000, svtype="DEL", colorsdb_af=0.2),
+            # A breakend's END is its mate's position, so it's before pos here.
+            dict(sv_id=4, chrom="chr1", pos=8000, end_pos=100, svtype="BND", gnomad_af=0.02,
+                 colorsdb_af=0.001),
+        ],
+        transcripts=[
+            dict(transcript_id="T1", gene_name="GENE1", gene_id="G1",
+                 transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
+            dict(transcript_id="T2", gene_name="GENE2", gene_id="G2",
+                 transcript_type="protein_coding", mane_select=1, chrom="chr2", strand="+"),
+        ],
+        sv_transcript_parts=[
+            dict(sv_id=1, transcript_id="T1", region="intron", number=1, pos=1500, end_pos=2500,
+                 overlaps_sv=1),
+            dict(sv_id=2, transcript_id="T1", region="promoter", pos=5500, end_pos=7499,
+                 overlaps_sv=0),
+            dict(sv_id=3, transcript_id="T2", region="promoter", pos=2500, end_pos=4499,
+                 overlaps_sv=1),
+        ],
+        calls=[
+            dict(sv_id=1, sample="HG002", caller="sniffles2", vcf_id="a"),
+            dict(sv_id=2, sample="HG002", caller="cutesv", vcf_id="b"),
+            dict(sv_id=2, sample="HG003", caller="cutesv", vcf_id="c"),
+            dict(sv_id=3, sample="HG002", caller="sniffles2", vcf_id="d"),
+            dict(sv_id=3, sample="HG002", caller="cutesv", vcf_id="e"),
+            dict(sv_id=4, sample="HG002", caller="sniffles2", vcf_id="f"),
+            dict(sv_id=4, sample="HG003", caller="cutesv", vcf_id="g"),
+        ],
+    )
 
 
 def test_no_callers_keeps_every_sv(tmp_path):
