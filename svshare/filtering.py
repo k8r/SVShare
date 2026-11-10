@@ -1,6 +1,6 @@
 # Functions for choosing which SVs a report includes.
 from .callers import CALLERS
-from .database import SVFilter, gene_names, select_sv_ids
+from .database import SVFilter, gene_names
 from .genes import GENE_INFO, read_gene_symbols
 from .population import DATASETS
 
@@ -42,8 +42,3 @@ def make_sv_filter(caller_support="any", min_samples=1, sv_type="any", max_frequ
         near_reference_gap={"include": None, "only": True, "exclude": False}[near_reference_gap],
     )
 
-
-# Return the IDs, in order, of the SVs in the database that pass the report's
-# filter options.
-def filter_sv_ids(db_path, **options):
-    return select_sv_ids(db_path, make_sv_filter(**options))

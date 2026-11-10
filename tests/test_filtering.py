@@ -1,7 +1,9 @@
 import sqlite3
 
-from svshare.database import SCHEMA
-from svshare.filtering import filter_sv_ids, find_unknown_genes, parse_gene_list
+from svshare.callers import CALLERS
+from svshare.database import SCHEMA, SVFilter, select_sv_ids
+from svshare.filtering import find_unknown_genes, make_sv_filter, parse_gene_list
+from svshare.population import DATASETS
 
 
 def test_genes_only():
@@ -78,75 +80,74 @@ def write_test_database(tmp_path):
     return db_path
 
 
-def test_caller_support_any_keeps_every_sv(tmp_path):
-    assert filter_sv_ids(write_test_database(tmp_path), caller_support="any") == [1, 2, 3, 4]
+def test_no_callers_keeps_every_sv(tmp_path):
+    assert select_sv_ids(write_test_database(tmp_path), SVFilter()) == [1, 2, 3, 4]
 
 
 # Naming one caller keeps SVs the other caller also called.
-def test_caller_support_one_caller_keeps_svs_it_called(tmp_path):
+def test_one_caller_keeps_svs_it_called(tmp_path):
     db_path = write_test_database(tmp_path)
-    assert filter_sv_ids(db_path, caller_support="sniffles2") == [1, 3, 4]
-    assert filter_sv_ids(db_path, caller_support="cutesv") == [2, 3, 4]
+    assert select_sv_ids(db_path, SVFilter(callers=("sniffles2",))) == [1, 3, 4]
+    assert select_sv_ids(db_path, SVFilter(callers=("cutesv",))) == [2, 3, 4]
 
 
 # Both callers must call the SV in the same sample, so 4 (called by each in a
 # different sample) doesn't pass.
-def test_caller_support_both_keeps_svs_every_caller_called_in_one_sample(tmp_path):
-    assert filter_sv_ids(write_test_database(tmp_path), caller_support="both") == [3]
+def test_every_caller_must_call_the_sv_in_one_sample(tmp_path):
+    sv_filter = SVFilter(callers=("sniffles2", "cutesv"))
+    assert select_sv_ids(write_test_database(tmp_path), sv_filter) == [3]
 
 
 def test_min_samples_with_any_caller(tmp_path):
     db_path = write_test_database(tmp_path)
-    assert filter_sv_ids(db_path, min_samples=1) == [1, 2, 3, 4]
-    assert filter_sv_ids(db_path, min_samples=2) == [2, 4]
-    assert filter_sv_ids(db_path, min_samples=3) == []
+    assert select_sv_ids(db_path, SVFilter(min_samples=1)) == [1, 2, 3, 4]
+    assert select_sv_ids(db_path, SVFilter(min_samples=2)) == [2, 4]
+    assert select_sv_ids(db_path, SVFilter(min_samples=3)) == []
 
 
-# Only samples where the SV meets caller_support count toward min_samples.
-def test_min_samples_counts_samples_that_meet_caller_support(tmp_path):
+# Only samples where every listed caller called the SV count toward min_samples.
+def test_min_samples_counts_samples_where_the_callers_called_it(tmp_path):
     db_path = write_test_database(tmp_path)
-    assert filter_sv_ids(db_path, caller_support="cutesv", min_samples=2) == [2]
-    assert filter_sv_ids(db_path, caller_support="sniffles2", min_samples=2) == []
-    assert filter_sv_ids(db_path, caller_support="both", min_samples=2) == []
+    assert select_sv_ids(db_path, SVFilter(min_samples=2, callers=("cutesv",))) == [2]
+    assert select_sv_ids(db_path, SVFilter(min_samples=2, callers=("sniffles2",))) == []
+    assert select_sv_ids(db_path, SVFilter(min_samples=2, callers=("sniffles2", "cutesv"))) == []
 
 
-def test_sv_type_keeps_svs_of_that_type(tmp_path):
+def test_svtype_keeps_svs_of_that_type(tmp_path):
     db_path = write_test_database(tmp_path)
-    assert filter_sv_ids(db_path, sv_type="any") == [1, 2, 3, 4]
-    assert filter_sv_ids(db_path, sv_type="DEL") == [1, 3]
-    assert filter_sv_ids(db_path, sv_type="DUP") == []
+    assert select_sv_ids(db_path, SVFilter(svtype="DEL")) == [1, 3]
+    assert select_sv_ids(db_path, SVFilter(svtype="DUP")) == []
 
 
 def test_filters_combine(tmp_path):
-    assert filter_sv_ids(write_test_database(tmp_path), caller_support="both", sv_type="DEL") == [3]
+    sv_filter = SVFilter(callers=("sniffles2", "cutesv"), svtype="DEL")
+    assert select_sv_ids(write_test_database(tmp_path), sv_filter) == [3]
 
 
 # An SV passes if it's at most the frequency in every database that has a match
 # for it, so 1 (no match) and 2 (exactly 1%) pass, and 3 and 4 (common in one
 # database) don't.
-def test_max_frequency_keeps_svs_rare_in_every_database(tmp_path):
-    db_path = write_test_database(tmp_path)
-    assert filter_sv_ids(db_path, max_frequency=None) == [1, 2, 3, 4]
-    assert filter_sv_ids(db_path, max_frequency=0.01) == [1, 2]
+def test_max_allele_frequency_keeps_svs_rare_in_every_database(tmp_path):
+    sv_filter = SVFilter(population_datasets=("gnomad", "colorsdb"), max_allele_frequency=0.01)
+    assert select_sv_ids(write_test_database(tmp_path), sv_filter) == [1, 2]
 
 
 # Only parts the SV overlaps count, so 2 (near GENE1's promoter) doesn't pass.
 def test_genes_keeps_svs_overlapping_a_listed_gene(tmp_path):
     db_path = write_test_database(tmp_path)
-    assert filter_sv_ids(db_path, genes=[]) == [1, 2, 3, 4]
-    assert filter_sv_ids(db_path, genes=["GENE1"]) == [1]
-    assert filter_sv_ids(db_path, genes=["gene2"]) == [3]
-    assert filter_sv_ids(db_path, genes=["GENE1", "GENE2"]) == [1, 3]
+    assert select_sv_ids(db_path, SVFilter(genes=("GENE1",))) == [1]
+    assert select_sv_ids(db_path, SVFilter(genes=("gene2",))) == [3]
+    assert select_sv_ids(db_path, SVFilter(genes=("GENE1", "GENE2"))) == [1, 3]
 
 
 # Insertions and breakends cover just their position, so 4's END is ignored.
 def test_region_keeps_svs_overlapping_it(tmp_path):
     db_path = write_test_database(tmp_path)
-    assert filter_sv_ids(db_path, region=("chr1", 1500, 5000)) == [1, 2]
-    assert filter_sv_ids(db_path, region=("chr1", 2001, 4999)) == []
-    assert filter_sv_ids(db_path, region=("chr1", 1, 999)) == []
-    assert filter_sv_ids(db_path, region=("chr1", 8000, 8000)) == [4]
-    assert filter_sv_ids(db_path, region=("chr2", 1, 1000)) == [3]
+    assert select_sv_ids(db_path, SVFilter(region=("chr1", 1500, 5000))) == [1, 2]
+    assert select_sv_ids(db_path, SVFilter(region=("chr1", 2001, 4999))) == []
+    assert select_sv_ids(db_path, SVFilter(region=("chr1", 1, 999))) == []
+    assert select_sv_ids(db_path, SVFilter(region=("chr1", 8000, 8000))) == [4]
+    assert select_sv_ids(db_path, SVFilter(region=("chr2", 1, 1000))) == [3]
 
 
 def write_test_gene_info(tmp_path):
@@ -173,12 +174,32 @@ def test_find_unknown_genes_returns_unknown_symbols(tmp_path):
     assert find_unknown_genes(["BRCA1", "brac1", "TP35"], db_path, gene_info) == ["brac1", "TP35"]
 
 
-def test_near_reference_gap_excludes_includes_or_keeps_only_those_svs(tmp_path):
+def test_near_reference_gap_keeps_only_those_svs_or_only_the_rest(tmp_path):
     db_path = write_test_database(tmp_path)
     with sqlite3.connect(db_path) as db:
         db.execute("UPDATE svs SET near_reference_gap = 'overlaps 20 unknown bases'"
                    " WHERE sv_id = 2")
     db.close()
-    assert filter_sv_ids(db_path, near_reference_gap="include") == [1, 2, 3, 4]
-    assert filter_sv_ids(db_path, near_reference_gap="exclude") == [1, 3, 4]
-    assert filter_sv_ids(db_path, near_reference_gap="only") == [2]
+    assert select_sv_ids(db_path, SVFilter(near_reference_gap=True)) == [2]
+    assert select_sv_ids(db_path, SVFilter(near_reference_gap=False)) == [1, 3, 4]
+
+
+# The report's defaults keep every SV, except that they check every population dataset.
+def test_make_sv_filter_defaults():
+    assert make_sv_filter() == SVFilter(population_datasets=tuple(DATASETS))
+
+
+def test_make_sv_filter_turns_caller_support_into_callers():
+    assert make_sv_filter(caller_support="any").callers == ()
+    assert make_sv_filter(caller_support="cutesv").callers == ("cutesv",)
+    assert make_sv_filter(caller_support="both").callers == tuple(CALLERS)
+
+
+def test_make_sv_filter_turns_options_into_plain_values():
+    sv_filter = make_sv_filter(sv_type="DEL", max_frequency=0.1, genes=["TP53"])
+    assert (sv_filter.svtype, sv_filter.max_allele_frequency, sv_filter.genes) == (
+        "DEL", 0.1, ("TP53",))
+    assert make_sv_filter(sv_type="any").svtype is None
+    assert make_sv_filter(near_reference_gap="include").near_reference_gap is None
+    assert make_sv_filter(near_reference_gap="only").near_reference_gap is True
+    assert make_sv_filter(near_reference_gap="exclude").near_reference_gap is False
