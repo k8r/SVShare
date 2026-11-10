@@ -2,8 +2,8 @@ import sqlite3
 
 from svshare.callers import CALLERS
 from svshare.database import SCHEMA, SVFilter, select_sv_ids
-from svshare.filtering import find_unknown_genes, make_sv_filter, parse_gene_list
 from svshare.population import DATASETS
+from svshare.reporting import find_unknown_genes, make_sv_filter, parse_gene_list
 
 
 def test_genes_only():
