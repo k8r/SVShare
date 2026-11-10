@@ -1,4 +1,4 @@
-# Write analyze results to a SQLite database.
+# Read and write analyze results in a SQLite database.
 #
 # A call is one caller's report of an SV in one sample (one record in the VCF an
 # SV caller wrote). An SV is the variant those calls describe: Jasmine decides
@@ -104,17 +104,6 @@ CREATE TABLE commands (
 """
 
 
-# Open the database, saving any changes and closing it when done.
-@contextmanager
-def connect(db_path):
-    db = sqlite3.connect(db_path)
-    try:
-        with db:
-            yield db
-    finally:
-        db.close()
-
-
 # Where an SV is, and its type and length.
 @dataclass
 class SVPosition:
@@ -124,6 +113,34 @@ class SVPosition:
     end_pos: int | None
     svtype: str
     svlen: int | None
+
+
+# Which SVs a report includes. Each field left at its default keeps every SV.
+@dataclass
+class SVFilter:
+    # A sample counts toward min_samples if every caller in callers called the
+    # SV in it, or any caller if callers is empty.
+    min_samples: int = 1
+    callers: tuple[str, ...] = ()
+    svtype: str | None = None
+    # SVs not found in a population dataset still pass.
+    population_datasets: tuple[str, ...] = ()
+    max_allele_frequency: float | None = None
+    genes: tuple[str, ...] = ()
+    region: tuple[str, int, int] | None = None
+    # True keeps only SVs at or near a reference gap, False only the rest.
+    near_reference_gap: bool | None = None
+
+
+# Open the database, saving any changes and closing it when done.
+@contextmanager
+def connect(db_path):
+    db = sqlite3.connect(db_path)
+    try:
+        with db:
+            yield db
+    finally:
+        db.close()
 
 
 # Return every SV's position, type, and length.
@@ -148,6 +165,86 @@ def gene_names(db_path):
         return {gene_name for (gene_name,) in db.execute(
             "SELECT DISTINCT gene_name FROM transcripts"
         )}
+
+
+def _sample_support_condition(callers, min_samples):
+    samples = "SELECT sv_id, sample FROM calls"
+    params = []
+    if callers:
+        samples += (f" WHERE caller IN ({', '.join('?' * len(callers))})"
+                    " GROUP BY sv_id, sample HAVING COUNT(DISTINCT caller) = ?")
+        params = list(callers) + [len(callers)]
+    else:
+        samples += " GROUP BY sv_id, sample"
+    return (
+        f"sv_id IN (SELECT sv_id FROM ({samples}) GROUP BY sv_id HAVING COUNT(*) >= ?)",
+        params + [min_samples],
+    )
+
+
+def _svtype_condition(svtype):
+    if svtype is None:
+        return None
+    return "svtype = ?", [svtype]
+
+
+def _allele_frequency_condition(population_datasets, max_allele_frequency):
+    if max_allele_frequency is None:
+        return None
+    return (
+        " AND ".join(f"({dataset}_af IS NULL OR {dataset}_af <= ?)"
+                     for dataset in population_datasets),
+        [max_allele_frequency] * len(population_datasets),
+    )
+
+
+def _genes_condition(genes):
+    if not genes:
+        return None
+    return (
+        "sv_id IN (SELECT sv_id FROM sv_transcript_parts JOIN transcripts USING (transcript_id)"
+        f" WHERE overlaps_sv = 1 AND gene_name COLLATE NOCASE IN ({', '.join('?' * len(genes))}))",
+        list(genes),
+    )
+
+
+def _region_condition(region):
+    if region is None:
+        return None
+    chrom, start, end = region
+    # An insertion's or breakend's end position isn't where it ends, so only its
+    # start position is checked.
+    return (
+        "chrom = ? AND pos <= ?"
+        " AND (CASE WHEN svtype IN ('INS', 'BND') THEN pos ELSE MAX(end_pos, pos) END) >= ?",
+        [chrom, end, start],
+    )
+
+
+def _reference_gap_condition(near_reference_gap):
+    if near_reference_gap is None:
+        return None
+    return f"near_reference_gap IS {'NOT ' if near_reference_gap else ''}NULL", []
+
+
+# Return the IDs, in order, of the SVs in the database that pass sv_filter.
+def select_sv_ids(db_path, sv_filter):
+    conditions, params = [], []
+    for condition in (
+        _sample_support_condition(sv_filter.callers, sv_filter.min_samples),
+        _svtype_condition(sv_filter.svtype),
+        _allele_frequency_condition(sv_filter.population_datasets,
+                                    sv_filter.max_allele_frequency),
+        _genes_condition(sv_filter.genes),
+        _region_condition(sv_filter.region),
+        _reference_gap_condition(sv_filter.near_reference_gap),
+    ):
+        if condition:
+            conditions.append(condition[0])
+            params += condition[1]
+    where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+    with connect(db_path) as db:
+        return [sv_id for (sv_id,) in db.execute(f"SELECT sv_id FROM svs{where} ORDER BY sv_id", params)]
 
 
 # Yield (id, chrom, pos, info, format_values) for each record in a VCF, where
