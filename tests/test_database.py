@@ -5,7 +5,8 @@ import pytest
 from svshare.database import connect
 
 
-# Changes are saved, and the database is closed even when something fails.
+# Changes are saved, rows can be read by column name, and the database is
+# closed even when something fails.
 def test_connect_saves_and_closes(tmp_path):
     db_path = tmp_path / "test.db"
     with connect(db_path) as db:
@@ -21,4 +22,4 @@ def test_connect_saves_and_closes(tmp_path):
     with pytest.raises(sqlite3.ProgrammingError):
         db.execute("SELECT 1")
     with connect(db_path) as db:
-        assert db.execute("SELECT x FROM t").fetchall() == [(1,)]
+        assert [row["x"] for row in db.execute("SELECT x FROM t")] == [1]

@@ -17,10 +17,10 @@ def make_database(tmp_path, svs=(), calls=(), transcripts=(), sv_transcript_part
     return db_path
 
 
-# Return the given columns, or all of them, of each row in table, in the order
-# the rows were saved.
+# Return the given columns, or all of them, of each row in table as a tuple, in
+# the order the rows were saved.
 def read_rows(db_path, table, *columns):
     with connect(db_path) as db:
-        return db.execute(
+        return [tuple(row) for row in db.execute(
             f"SELECT {', '.join(columns) or '*'} FROM {table} ORDER BY rowid"
-        ).fetchall()
+        )]

@@ -27,6 +27,7 @@
 # gnomad_ and colorsdb_ columns hold the ID and allele frequency of the matching
 # gnomAD and CoLoRSdb record, if any. near_reference_gap describes how close the
 # SV is to a gap in the reference, if it's at or near one.
+import json
 import sqlite3
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -132,10 +133,12 @@ class SVFilter:
     near_reference_gap: bool | None = None
 
 
-# Open the database, saving any changes and closing it when done.
+# Open the database, saving any changes and closing it when done. Rows can be
+# read by column name.
 @contextmanager
 def connect(db_path):
     db = sqlite3.connect(db_path)
+    db.row_factory = sqlite3.Row
     try:
         with db:
             yield db
@@ -146,7 +149,7 @@ def connect(db_path):
 # Return every SV's position, type, and length.
 def sv_positions(db_path):
     with connect(db_path) as db:
-        return [SVPosition(*row) for row in db.execute(
+        return [SVPosition(**row) for row in db.execute(
             "SELECT sv_id, chrom, pos, vcf_end, svtype, svlen FROM svs"
         )]
 
@@ -154,7 +157,7 @@ def sv_positions(db_path):
 # Return the ID of every gene with a saved transcript, sorted.
 def gene_ids(db_path):
     with connect(db_path) as db:
-        return [gene_id for (gene_id,) in db.execute(
+        return [row["gene_id"] for row in db.execute(
             "SELECT DISTINCT gene_id FROM transcripts ORDER BY gene_id"
         )]
 
@@ -162,8 +165,53 @@ def gene_ids(db_path):
 # Return the name of every gene with a saved transcript.
 def gene_names(db_path):
     with connect(db_path) as db:
-        return {gene_name for (gene_name,) in db.execute(
+        return {row["gene_name"] for row in db.execute(
             "SELECT DISTINCT gene_name FROM transcripts"
+        )}
+
+
+# Matches rows whose sv_id is in a JSON list of IDs, given as one parameter, so
+# there's no limit on how many IDs can be passed.
+SV_ID_IN = "sv_id IN (SELECT value FROM json_each(?))"
+
+
+# Return each SV in sv_ids's position, type, length, allele frequencies, and
+# how close it is to a gap in the reference.
+def sv_rows(db_path, sv_ids):
+    with connect(db_path) as db:
+        return db.execute(
+            "SELECT sv_id, chrom, pos, vcf_end, svtype, svlen, gnomad_af, colorsdb_af,"
+            f" near_reference_gap FROM svs WHERE {SV_ID_IN}",
+            [json.dumps(list(sv_ids))],
+        ).fetchall()
+
+
+# Return the sample, caller, genotype, and read support of each call of the SVs
+# in sv_ids, by sample and then caller.
+def sv_calls(db_path, sv_ids):
+    with connect(db_path) as db:
+        return db.execute(
+            "SELECT sv_id, sample, caller, genotype, read_support FROM calls"
+            f" WHERE {SV_ID_IN} ORDER BY sample, caller",
+            [json.dumps(list(sv_ids))],
+        ).fetchall()
+
+
+# Return each kind of transcript part the SVs in sv_ids overlap, once per gene.
+def overlapped_gene_regions(db_path, sv_ids):
+    with connect(db_path) as db:
+        return db.execute(
+            "SELECT DISTINCT sv_id, gene_name, gene_id, region FROM sv_transcript_parts"
+            f" JOIN transcripts USING (transcript_id) WHERE overlaps_sv = 1 AND {SV_ID_IN}",
+            [json.dumps(list(sv_ids))],
+        ).fetchall()
+
+
+# Return each saved gene's full name and dosage sensitivity, by gene ID.
+def gene_details(db_path):
+    with connect(db_path) as db:
+        return {row["gene_id"]: dict(row) for row in db.execute(
+            "SELECT gene_id, full_name, haploinsufficiency, triplosensitivity FROM genes"
         )}
 
 
@@ -244,7 +292,9 @@ def select_sv_ids(db_path, sv_filter):
             params += condition[1]
     where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
     with connect(db_path) as db:
-        return [sv_id for (sv_id,) in db.execute(f"SELECT sv_id FROM svs{where} ORDER BY sv_id", params)]
+        return [row["sv_id"] for row in db.execute(
+            f"SELECT sv_id FROM svs{where} ORDER BY sv_id", params
+        )]
 
 
 # Yield (id, chrom, pos, info, format_values) for each record in a VCF, where
