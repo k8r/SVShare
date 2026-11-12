@@ -23,8 +23,9 @@
 # plus the SV's start_spread and length_spread (max - min across its calls, in bp),
 # so the matching can later be made stricter without rerunning Jasmine.
 #
-# An SV's pos, vcf_end, and svlen are those of the call Jasmine kept. The
-# gnomad_ and colorsdb_ columns hold the ID and allele frequency of the matching
+# An SV's pos, vcf_end, and svlen are those of the call Jasmine kept, and
+# reference_end is where it ends on the reference, which isn't always its VCF
+# END. The gnomad_ and colorsdb_ columns hold the ID and allele frequency of the matching
 # gnomAD and CoLoRSdb record, if any. near_reference_gap describes how close the
 # SV is to a gap in the reference, if it's at or near one.
 import json
@@ -33,7 +34,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from .svs import SVPosition
+from .svs import SVPosition, reference_end
 
 SCHEMA = """
 CREATE TABLE svs (
@@ -41,6 +42,7 @@ CREATE TABLE svs (
     chrom TEXT,
     pos INTEGER,
     vcf_end INTEGER,
+    reference_end INTEGER,
     svtype TEXT,
     svlen INTEGER,
     start_spread INTEGER,
@@ -357,10 +359,10 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
             starts = [call[5] for call in calls]
             lengths = [abs(call[8]) for call in calls if call[8] is not None]
             db.execute(
-                "INSERT INTO svs (sv_id, chrom, pos, vcf_end, svtype, svlen, start_spread,"
-                " length_spread) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (sv_id, chrom, pos, vcf_end, svtype, svlen, max(starts) - min(starts),
-                 max(lengths) - min(lengths) if lengths else None),
+                "INSERT INTO svs (sv_id, chrom, pos, vcf_end, reference_end, svtype, svlen,"
+                " start_spread, length_spread) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (sv_id, chrom, pos, vcf_end, reference_end(svtype, pos, vcf_end), svtype, svlen,
+                 max(starts) - min(starts), max(lengths) - min(lengths) if lengths else None),
             )
             db.executemany(
                 "INSERT INTO calls (sv_id, sample, caller, vcf_id, chrom, pos, vcf_end,"

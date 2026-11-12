@@ -124,7 +124,7 @@ def write_vcf(path, records):
 
 # A Sniffles2 VCF, a cuteSV VCF, and a Jasmine merge of them: a deletion called
 # in both HG002 (sniffles2) and HG003 (cuteSV), 10 bp apart, and an insertion
-# only in HG003.
+# only in HG003, with cuteSV's END of its POS + 1.
 def write_merge_vcfs(tmp_path):
     sniffles = write_vcf(tmp_path / "HG002.sniffles2.vcf", [
         ["chr1", 1000, "Sniffles2.DEL.1", "N", "<DEL>", ".", "PASS",
@@ -134,14 +134,14 @@ def write_merge_vcfs(tmp_path):
         ["chr1", 1010, "cuteSV.DEL.0", "N", "<DEL>", ".", "PASS",
          "SVTYPE=DEL;SVLEN=-140;END=1150", "GT:DR:DV:PL:GQ", "./.:.:18:.,.,.:."],
         ["chr2", 5000, "cuteSV.INS.0", "N", "<INS>", ".", "PASS",
-         "SVTYPE=INS;SVLEN=300;END=5000", "GT:DR:DV:PL:GQ", "0/1:20:9:.,.,.:5"],
+         "SVTYPE=INS;SVLEN=300;END=5001", "GT:DR:DV:PL:GQ", "0/1:20:9:.,.,.:5"],
     ])
     merged = write_vcf(tmp_path / "merged.vcf", [
         ["chr1", 1000, "0_Sniffles2.DEL.1", "N", "<DEL>", ".", "PASS",
          "SVTYPE=DEL;SVLEN=-150;END=1150;SUPP_VEC=11;SUPP=2;IDLIST=Sniffles2.DEL.1,cuteSV.DEL.0",
          "GT", "0/1"],
         ["chr2", 5000, "1_cuteSV.INS.0", "N", "<INS>", ".", "PASS",
-         "SVTYPE=INS;SVLEN=300;END=5000;SUPP_VEC=01;SUPP=1;IDLIST=cuteSV.INS.0",
+         "SVTYPE=INS;SVLEN=300;END=5001;SUPP_VEC=01;SUPP=1;IDLIST=cuteSV.INS.0",
          "GT", "0/1"],
     ])
     prepped_vcfs = [VCFPreppedForMerging("HG002", "sniffles2", sniffles),
@@ -149,17 +149,18 @@ def write_merge_vcfs(tmp_path):
     return merged, prepped_vcfs
 
 
-# Checks that each Jasmine record becomes one SV, with the kept call's end and
-# length and how far apart its calls' starts and lengths are.
+# Checks that each Jasmine record becomes one SV, with the kept call's VCF END
+# and length, where it ends on the reference, and how far apart its calls'
+# starts and lengths are.
 def test_write_database_has_one_sv_per_jasmine_record(tmp_path):
     merged_vcf, prepped_vcfs = write_merge_vcfs(tmp_path)
     db_path = write_database(merged_vcf, prepped_vcfs, tmp_path / "svshare.db")
 
-    columns = ("sv_id", "chrom", "pos", "vcf_end", "svtype", "svlen",
+    columns = ("sv_id", "chrom", "pos", "vcf_end", "reference_end", "svtype", "svlen",
                "start_spread", "length_spread")
     assert read_rows(db_path, "svs", *columns) == [
-        (1, "chr1", 1000, 1150, "DEL", -150, 10, 10),
-        (2, "chr2", 5000, 5000, "INS", 300, 0, 0),
+        (1, "chr1", 1000, 1150, 1150, "DEL", -150, 10, 10),
+        (2, "chr2", 5000, 5001, 5000, "INS", 300, 0, 0),
     ]
 
 
