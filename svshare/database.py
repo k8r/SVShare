@@ -33,6 +33,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+from .svs import SVPosition
+
 SCHEMA = """
 CREATE TABLE svs (
     sv_id INTEGER PRIMARY KEY,
@@ -103,17 +105,6 @@ CREATE TABLE commands (
     command TEXT NOT NULL
 );
 """
-
-
-# Where an SV is, and its type and length.
-@dataclass
-class SVPosition:
-    sv_id: int
-    chrom: str
-    pos: int
-    vcf_end: int | None
-    svtype: str
-    svlen: int | None
 
 
 # Which SVs a report includes. Each field left at its default keeps every SV.

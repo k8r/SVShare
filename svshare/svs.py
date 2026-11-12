@@ -38,6 +38,17 @@ class SV:
     near_reference_gap: str | None = None
 
 
+# Where an SV is, and its type and length.
+@dataclass
+class SVPosition:
+    sv_id: int
+    chrom: str
+    pos: int
+    vcf_end: int | None
+    svtype: str
+    svlen: int | None
+
+
 # Where an SV ends on the reference: at its position if it's an insertion or
 # breakend or its VCF has no END, otherwise at its VCF END.
 def reference_end(svtype, pos, vcf_end):
