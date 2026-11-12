@@ -26,7 +26,6 @@ class Gene:
 # Where an SV is, and its type and length.
 @dataclass
 class SVPosition:
-    sv_id: int
     chrom: str
     pos: int
     vcf_end: int | None
@@ -37,6 +36,7 @@ class SVPosition:
 
 @dataclass
 class SV:
+    sv_id: int
     position: SVPosition
     gnomad_af: float | None
     colorsdb_af: float | None

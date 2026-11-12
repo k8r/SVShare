@@ -84,15 +84,14 @@ def load_svs(db_path, sv_ids):
                 info.get("triplosensitivity"), sorted(gene_regions, key=REGION_ORDER.index),
             ))
         position = SVPosition(
-            sv_id=row["sv_id"], chrom=row["chrom"], pos=row["pos"], vcf_end=row["vcf_end"],
+            chrom=row["chrom"], pos=row["pos"], vcf_end=row["vcf_end"],
             reference_end=row["reference_end"], svtype=row["svtype"], svlen=row["svlen"],
         )
         svs.append(SV(
-            position, row["gnomad_af"], row["colorsdb_af"], calls.get(row["sv_id"], []),
-            genes, row["near_reference_gap"],
+            row["sv_id"], position, row["gnomad_af"], row["colorsdb_af"],
+            calls.get(row["sv_id"], []), genes, row["near_reference_gap"],
         ))
-    svs.sort(key=lambda sv: (_chrom_order(sv.position.chrom), sv.position.pos,
-                             sv.position.sv_id))
+    svs.sort(key=lambda sv: (_chrom_order(sv.position.chrom), sv.position.pos, sv.sv_id))
     return svs
 
 

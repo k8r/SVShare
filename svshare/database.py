@@ -139,12 +139,18 @@ def connect(db_path):
         db.close()
 
 
-# Return every SV's position, type, and length.
+# Return every SV's position, type, and length, by SV ID.
 def sv_positions(db_path):
     with connect(db_path) as db:
-        return [SVPosition(**row) for row in db.execute(
-            "SELECT sv_id, chrom, pos, vcf_end, reference_end, svtype, svlen FROM svs"
-        )]
+        return {
+            row["sv_id"]: SVPosition(
+                chrom=row["chrom"], pos=row["pos"], vcf_end=row["vcf_end"],
+                reference_end=row["reference_end"], svtype=row["svtype"], svlen=row["svlen"],
+            )
+            for row in db.execute(
+                "SELECT sv_id, chrom, pos, vcf_end, reference_end, svtype, svlen FROM svs"
+            )
+        }
 
 
 # Return the ID of every gene with a saved transcript, sorted.

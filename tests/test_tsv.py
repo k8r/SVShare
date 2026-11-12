@@ -3,7 +3,7 @@ from svshare.tsv import COLUMNS, _row, write_tsv
 
 
 def make_sv(calls=(), genes=(), near_reference_gap=None):
-    return SV(SVPosition(1, "chr2", 300, 300, 300, "INS", 50), None, 0.005, list(calls),
+    return SV(1, SVPosition("chr2", 300, 300, 300, "INS", 50), None, 0.005, list(calls),
               list(genes), near_reference_gap)
 
 

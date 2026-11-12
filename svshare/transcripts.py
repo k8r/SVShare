@@ -127,12 +127,12 @@ def split_out_codons(rows, codons):
 # Write a BED file with each SV widened by its view margin.
 def write_sv_windows_bed(svs, path):
     with open(path, "w") as f:
-        for sv in svs:
+        for sv_id, sv in svs.items():
             start = sv.pos - 1
             end = reference_end(sv.svtype, sv.pos, sv.vcf_end)
             margin = max(MIN_VIEW_MARGIN, round(VIEW_MARGIN_FRACTION * (end - start)))
             window_start, window_end = max(0, start - margin), end + margin
-            row = (sv.chrom, window_start, window_end, sv.sv_id, start, end)
+            row = (sv.chrom, window_start, window_end, sv_id, start, end)
             f.write("\t".join(map(str, row)) + "\n")
 
 

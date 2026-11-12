@@ -58,10 +58,10 @@ def add_reference_gaps(db_path, reference):
     gaps = find_gaps(reference)
     svs = sv_positions(db_path)
     near = {}
-    for sv in svs:
+    for sv_id, sv in svs.items():
         description = describe_nearest_gap(gaps.get(sv.chrom, []), sv.pos,
                                            reference_end(sv.svtype, sv.pos, sv.vcf_end))
         if description:
-            near[sv.sv_id] = description
+            near[sv_id] = description
     save_reference_gaps(db_path, near)
     return len(near), len(svs)

@@ -83,9 +83,9 @@ def add_population_frequencies(db_path, dataset, vcf_path):
     svs = sv_positions(db_path)
     matches = {}
     with pysam.VariantFile(str(vcf_path)) as vcf:
-        for sv in svs:
+        for sv_id, sv in svs.items():
             match = best_match(vcf, sv.chrom, sv.pos, sv.vcf_end, sv.svtype, sv.svlen)
             if match:
-                matches[sv.sv_id] = match
+                matches[sv_id] = match
     save_population_matches(db_path, dataset, matches)
     return len(matches), len(svs)
