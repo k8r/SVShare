@@ -23,21 +23,6 @@ class Gene:
     regions: list[str]
 
 
-@dataclass
-class SV:
-    sv_id: int
-    chrom: str
-    pos: int
-    end: int | None
-    svtype: str
-    svlen: int | None
-    gnomad_af: float | None
-    colorsdb_af: float | None
-    calls: list[Call]
-    genes: list[Gene]
-    near_reference_gap: str | None = None
-
-
 # Where an SV is, and its type and length.
 @dataclass
 class SVPosition:
@@ -45,8 +30,19 @@ class SVPosition:
     chrom: str
     pos: int
     vcf_end: int | None
+    reference_end: int | None
     svtype: str
     svlen: int | None
+
+
+@dataclass
+class SV:
+    position: SVPosition
+    gnomad_af: float | None
+    colorsdb_af: float | None
+    calls: list[Call]
+    genes: list[Gene]
+    near_reference_gap: str | None = None
 
 
 # Where an SV ends on the reference: at its position if it's an insertion or

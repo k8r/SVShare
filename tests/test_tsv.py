@@ -1,10 +1,10 @@
-from svshare.svs import SV, Call, Gene
+from svshare.svs import SV, Call, Gene, SVPosition
 from svshare.tsv import COLUMNS, _row, write_tsv
 
 
 def make_sv(calls=(), genes=(), near_reference_gap=None):
-    return SV(1, "chr2", 300, None, "INS", 50, None, 0.005, list(calls), list(genes),
-              near_reference_gap)
+    return SV(SVPosition(1, "chr2", 300, 300, 300, "INS", 50), None, 0.005, list(calls),
+              list(genes), near_reference_gap)
 
 
 # Callers' genotypes are listed separately only where they differ, and unknown
@@ -67,7 +67,7 @@ def test_write_tsv(tmp_path):
     header, first, second = output.read_text().splitlines()
     assert header.split("\t") == COLUMNS
     assert first.split("\t") == [
-        "1", "chr2", "300", "", "INS", "50", "HG002 (0|1)", "7 from sniffles2 for HG002",
+        "1", "chr2", "300", "300", "INS", "50", "HG002 (0|1)", "7 from sniffles2 for HG002",
         "7", "350 bp from 20 unknown bases", "sniffles2", "", "0.005", "GENE1 (intron)",
         "GENE1: gene one", "", "",
     ]

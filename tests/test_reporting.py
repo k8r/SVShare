@@ -4,7 +4,7 @@ from svshare.database import SVFilter, select_sv_ids
 from svshare.population import DATASETS
 from svshare.reporting import (_chrom_order, find_unknown_genes, load_svs, make_sv_filter,
                               parse_gene_list)
-from svshare.svs import SV, Call, Gene
+from svshare.svs import SV, Call, Gene, SVPosition
 
 
 def test_genes_only():
@@ -269,8 +269,8 @@ def write_load_test_database(tmp_path):
 
 def test_svs_are_in_genome_order_and_only_the_given_ones(tmp_path):
     db_path = write_load_test_database(tmp_path)
-    assert [sv.sv_id for sv in load_svs(db_path, [1, 2, 3])] == [3, 2, 1]
-    assert [sv.sv_id for sv in load_svs(db_path, [1, 2])] == [2, 1]
+    assert [sv.position.sv_id for sv in load_svs(db_path, [1, 2, 3])] == [3, 2, 1]
+    assert [sv.position.sv_id for sv in load_svs(db_path, [1, 2])] == [2, 1]
 
 
 # Only genes the SV overlaps are included, with the parts it overlaps across
@@ -278,14 +278,14 @@ def test_svs_are_in_genome_order_and_only_the_given_ones(tmp_path):
 def test_load_svs(tmp_path):
     svs = load_svs(write_load_test_database(tmp_path), [1, 2, 3])
     assert svs == [
-        SV(3, "chr2", 100, 100, "BND", 0, None, None,
+        SV(SVPosition(3, "chr2", 100, 9000, 100, "BND", 0), None, None,
            [Call("HG003", "sniffles2", "0/1", 5)],
            [Gene("GENE2", None, None, None, ["promoter"])]),
-        SV(2, "chr2", 300, 300, "INS", 50, None, 0.005,
+        SV(SVPosition(2, "chr2", 300, 300, 300, "INS", 50), None, 0.005,
            [Call("HG002", "cutesv", "0|1", 6), Call("HG002", "sniffles2", "0|1", 6)],
            [Gene("GENE1", "gene one", "Sufficient evidence", None, ["UTR", "intron"])],
            "350 bp from 20 unknown bases"),
-        SV(1, "chr10", 500, 600, "DEL", -100, None, None,
+        SV(SVPosition(1, "chr10", 500, 600, 600, "DEL", -100), None, None,
            [Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
             Call("HG003", "cutesv", "./.", None)],
            []),

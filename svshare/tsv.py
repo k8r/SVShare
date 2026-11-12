@@ -59,11 +59,11 @@ def _per_gene(genes, field):
 # Return an SV's COLUMNS values.
 def _row(sv):
     return {
-        "chrom": sv.chrom,
-        "pos": sv.pos,
-        "end": sv.end,
-        "svtype": sv.svtype,
-        "svlen": sv.svlen,
+        "chrom": sv.position.chrom,
+        "pos": sv.position.pos,
+        "end": sv.position.reference_end,
+        "svtype": sv.position.svtype,
+        "svlen": sv.position.svlen,
         "samples": _samples(sv.calls),
         "read_support": _read_support(sv.calls),
         "weakest_sample_support": _weakest_sample_support(sv.calls),

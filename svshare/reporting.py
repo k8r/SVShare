@@ -6,7 +6,7 @@ from .database import (SVFilter, gene_details, gene_names, overlapped_gene_regio
                        select_sv_ids, sv_calls, sv_rows)
 from .genes import GENE_INFO, read_gene_symbols
 from .population import DATASETS
-from .svs import SV, Call, Gene
+from .svs import SV, Call, Gene, SVPosition
 from .tsv import write_tsv
 
 # The order a gene's parts are listed in, roughly from upstream to downstream.
@@ -83,12 +83,16 @@ def load_svs(db_path, sv_ids):
                 name, info.get("full_name"), info.get("haploinsufficiency"),
                 info.get("triplosensitivity"), sorted(gene_regions, key=REGION_ORDER.index),
             ))
+        position = SVPosition(
+            sv_id=row["sv_id"], chrom=row["chrom"], pos=row["pos"], vcf_end=row["vcf_end"],
+            reference_end=row["reference_end"], svtype=row["svtype"], svlen=row["svlen"],
+        )
         svs.append(SV(
-            row["sv_id"], row["chrom"], row["pos"], row["reference_end"], row["svtype"],
-            row["svlen"], row["gnomad_af"], row["colorsdb_af"],
-            calls.get(row["sv_id"], []), genes, row["near_reference_gap"],
+            position, row["gnomad_af"], row["colorsdb_af"], calls.get(row["sv_id"], []),
+            genes, row["near_reference_gap"],
         ))
-    svs.sort(key=lambda sv: (_chrom_order(sv.chrom), sv.pos, sv.sv_id))
+    svs.sort(key=lambda sv: (_chrom_order(sv.position.chrom), sv.position.pos,
+                             sv.position.sv_id))
     return svs
 
 
