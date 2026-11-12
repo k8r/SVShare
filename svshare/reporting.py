@@ -6,7 +6,7 @@ from .database import (SVFilter, gene_details, gene_names, overlapped_gene_regio
                        select_sv_ids, sv_calls, sv_rows)
 from .genes import GENE_INFO, read_gene_symbols
 from .population import DATASETS
-from .svs import POINT_TYPES, SV, Call, Gene
+from .svs import SV, Call, Gene
 from .tsv import write_tsv
 
 # The order a gene's parts are listed in, roughly from upstream to downstream.
@@ -84,9 +84,8 @@ def load_svs(db_path, sv_ids):
                 info.get("triplosensitivity"), sorted(gene_regions, key=REGION_ORDER.index),
             ))
         svs.append(SV(
-            row["sv_id"], row["chrom"], row["pos"],
-            None if row["svtype"] in POINT_TYPES else row["vcf_end"],
-            row["svtype"], row["svlen"], row["gnomad_af"], row["colorsdb_af"],
+            row["sv_id"], row["chrom"], row["pos"], row["reference_end"], row["svtype"],
+            row["svlen"], row["gnomad_af"], row["colorsdb_af"],
             calls.get(row["sv_id"], []), genes, row["near_reference_gap"],
         ))
     svs.sort(key=lambda sv: (_chrom_order(sv.chrom), sv.pos, sv.sv_id))

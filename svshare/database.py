@@ -173,7 +173,7 @@ SV_ID_IN = "sv_id IN (SELECT value FROM json_each(?))"
 def sv_rows(db_path, sv_ids):
     with connect(db_path) as db:
         return db.execute(
-            "SELECT sv_id, chrom, pos, vcf_end, svtype, svlen, gnomad_af, colorsdb_af,"
+            "SELECT sv_id, chrom, pos, reference_end, svtype, svlen, gnomad_af, colorsdb_af,"
             f" near_reference_gap FROM svs WHERE {SV_ID_IN}",
             [json.dumps(list(sv_ids))],
         ).fetchall()

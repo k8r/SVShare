@@ -222,10 +222,12 @@ def write_load_test_database(tmp_path):
     return make_database(
         tmp_path,
         svs=[
-            dict(sv_id=1, chrom="chr10", pos=500, vcf_end=600, svtype="DEL", svlen=-100),
-            dict(sv_id=2, chrom="chr2", pos=300, vcf_end=300, svtype="INS", svlen=50,
-                 colorsdb_af=0.005, near_reference_gap="350 bp from 20 unknown bases"),
-            dict(sv_id=3, chrom="chr2", pos=100, vcf_end=9000, svtype="BND", svlen=0),
+            dict(sv_id=1, chrom="chr10", pos=500, vcf_end=600, reference_end=600, svtype="DEL",
+                 svlen=-100),
+            dict(sv_id=2, chrom="chr2", pos=300, vcf_end=300, reference_end=300, svtype="INS",
+                 svlen=50, colorsdb_af=0.005, near_reference_gap="350 bp from 20 unknown bases"),
+            dict(sv_id=3, chrom="chr2", pos=100, vcf_end=9000, reference_end=100, svtype="BND",
+                 svlen=0),
         ],
         calls=[
             dict(sv_id=1, sample="HG002", caller="cutesv", vcf_id="a", genotype="1/1",
@@ -276,10 +278,10 @@ def test_svs_are_in_genome_order_and_only_the_given_ones(tmp_path):
 def test_load_svs(tmp_path):
     svs = load_svs(write_load_test_database(tmp_path), [1, 2, 3])
     assert svs == [
-        SV(3, "chr2", 100, None, "BND", 0, None, None,
+        SV(3, "chr2", 100, 100, "BND", 0, None, None,
            [Call("HG003", "sniffles2", "0/1", 5)],
            [Gene("GENE2", None, None, None, ["promoter"])]),
-        SV(2, "chr2", 300, None, "INS", 50, None, 0.005,
+        SV(2, "chr2", 300, 300, "INS", 50, None, 0.005,
            [Call("HG002", "cutesv", "0|1", 6), Call("HG002", "sniffles2", "0|1", 6)],
            [Gene("GENE1", "gene one", "Sufficient evidence", None, ["UTR", "intron"])],
            "350 bp from 20 unknown bases"),
