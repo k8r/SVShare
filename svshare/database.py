@@ -253,13 +253,7 @@ def _region_condition(region):
     if region is None:
         return None
     chrom, start, end = region
-    # An insertion's or breakend's end position isn't where it ends, so only its
-    # start position is checked.
-    return (
-        "chrom = ? AND pos <= ?"
-        " AND (CASE WHEN svtype IN ('INS', 'BND') THEN pos ELSE MAX(vcf_end, pos) END) >= ?",
-        [chrom, end, start],
-    )
+    return "chrom = ? AND pos <= ? AND reference_end >= ?", [chrom, end, start]
 
 
 def _reference_gap_condition(near_reference_gap):

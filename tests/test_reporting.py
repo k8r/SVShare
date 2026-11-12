@@ -50,13 +50,14 @@ def write_test_database(tmp_path):
     return make_database(
         tmp_path,
         svs=[
-            dict(sv_id=1, chrom="chr1", pos=1000, vcf_end=2000, svtype="DEL"),
-            dict(sv_id=2, chrom="chr1", pos=5000, vcf_end=5001, svtype="INS", gnomad_af=0.01,
-                 near_reference_gap="overlaps 20 unknown bases"),
-            dict(sv_id=3, chrom="chr2", pos=1000, vcf_end=3000, svtype="DEL", colorsdb_af=0.2),
+            dict(sv_id=1, chrom="chr1", pos=1000, vcf_end=2000, reference_end=2000, svtype="DEL"),
+            dict(sv_id=2, chrom="chr1", pos=5000, vcf_end=5001, reference_end=5000, svtype="INS",
+                 gnomad_af=0.01, near_reference_gap="overlaps 20 unknown bases"),
+            dict(sv_id=3, chrom="chr2", pos=1000, vcf_end=3000, reference_end=3000, svtype="DEL",
+                 colorsdb_af=0.2),
             # A breakend's END is its mate's position, so it's before pos here.
-            dict(sv_id=4, chrom="chr1", pos=8000, vcf_end=100, svtype="BND", gnomad_af=0.02,
-                 colorsdb_af=0.001),
+            dict(sv_id=4, chrom="chr1", pos=8000, vcf_end=100, reference_end=8000, svtype="BND",
+                 gnomad_af=0.02, colorsdb_af=0.001),
         ],
         transcripts=[
             dict(transcript_id="T1", gene_name="GENE1", gene_id="G1",
@@ -144,7 +145,8 @@ def test_genes_keeps_svs_overlapping_a_listed_gene(tmp_path):
     assert select_sv_ids(db_path, SVFilter(genes=("GENE1", "GENE2"))) == [1, 3]
 
 
-# Insertions and breakends cover just their position, so 4's END is ignored.
+# Regions are compared with where each SV ends on the reference, so 4's END is
+# ignored.
 def test_region_keeps_svs_overlapping_it(tmp_path):
     db_path = write_test_database(tmp_path)
     assert select_sv_ids(db_path, SVFilter(region=("chr1", 1500, 5000))) == [1, 2]
