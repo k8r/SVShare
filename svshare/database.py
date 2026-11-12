@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .svs import SVPosition, reference_end
+from .vcf_reader import int_or_none, read_jasmine_groups, read_vcf_records
 
 SCHEMA = """
 CREATE TABLE svs (
@@ -290,43 +291,6 @@ def select_sv_ids(db_path, sv_filter):
         )]
 
 
-# Yield (id, chrom, pos, info, format_values) for each record in a VCF, where
-# info and format_values are dicts of the INFO and first sample's FORMAT fields.
-def read_vcf_records(vcf):
-    with open(vcf) as f:
-        for line in f:
-            if line.startswith("#"):
-                continue
-            fields = line.rstrip("\n").split("\t")
-            info = dict(
-                item.split("=", 1) if "=" in item else (item, True)
-                for item in fields[7].split(";")
-            )
-            fmt = {}
-            if len(fields) > 9:
-                fmt = dict(zip(fields[8].split(":"), fields[9].split(":")))
-            yield fields[2], fields[0], int(fields[1]), info, fmt
-
-
-def _int_or_none(value):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
-# For each record in Jasmine's merged VCF, yield (chrom, pos, vcf_end, svtype,
-# svlen, members), where members lists the (input index, call ID) pairs merged
-# into it. SUPP_VEC has one digit per input VCF, in file_list order, and IDLIST
-# names the merged calls in that same order.
-def read_jasmine_groups(merged_vcf):
-    for _id, chrom, pos, info, _fmt in read_vcf_records(merged_vcf):
-        inputs = [i for i, bit in enumerate(info["SUPP_VEC"]) if bit == "1"]
-        members = list(zip(inputs, info["IDLIST"].split(",")))
-        yield (chrom, pos, _int_or_none(info.get("END")), info.get("SVTYPE"),
-               _int_or_none(info.get("SVLEN")), members)
-
-
 # Write the database to db_path, replacing any earlier one. prepped_vcfs lists
 # the VCFs prepped for merging, in the order Jasmine was given them.
 def write_database(merged_vcf, prepped_vcfs, db_path):
@@ -350,10 +314,10 @@ def write_database(merged_vcf, prepped_vcfs, db_path):
                 call_chrom, call_pos, info, fmt = calls_by_input[index][vcf_id]
                 calls.append((
                     sv_id, prepped_vcf.sample, prepped_vcf.caller, vcf_id, call_chrom, call_pos,
-                    _int_or_none(info.get("END")), info.get("SVTYPE"),
-                    _int_or_none(info.get("SVLEN")), fmt.get("GT"),
+                    int_or_none(info.get("END")), info.get("SVTYPE"),
+                    int_or_none(info.get("SVLEN")), fmt.get("GT"),
                     # Both sniffles2 and cuteSV report variant-supporting reads as DV.
-                    _int_or_none(fmt.get("DV")),
+                    int_or_none(fmt.get("DV")),
                 ))
 
             starts = [call[5] for call in calls]
