@@ -184,25 +184,30 @@ def test_near_reference_gap_keeps_only_those_svs_or_only_the_rest(tmp_path):
     assert select_sv_ids(db_path, SVFilter(near_reference_gap=False)) == [1, 3, 4]
 
 
-# The report's defaults keep every SV, except that they check every population dataset.
-def test_make_sv_filter_defaults():
-    assert make_sv_filter() == SVFilter(population_datasets=tuple(DATASETS))
+# Call make_sv_filter with the given options, and options that keep every SV for
+# the rest.
+def sv_filter_from(caller_support="any", min_samples=1, sv_type="any", max_frequency=None,
+                   genes=(), region=None, near_reference_gap="include"):
+    return make_sv_filter(caller_support=caller_support, min_samples=min_samples,
+                          sv_type=sv_type, max_frequency=max_frequency, genes=genes,
+                          region=region, near_reference_gap=near_reference_gap)
 
 
 def test_make_sv_filter_turns_caller_support_into_callers():
-    assert make_sv_filter(caller_support="any").callers == ()
-    assert make_sv_filter(caller_support="cutesv").callers == ("cutesv",)
-    assert make_sv_filter(caller_support="both").callers == tuple(CALLERS)
+    assert sv_filter_from(caller_support="any").callers == ()
+    assert sv_filter_from(caller_support="cutesv").callers == ("cutesv",)
+    assert sv_filter_from(caller_support="both").callers == tuple(CALLERS)
 
 
 def test_make_sv_filter_turns_options_into_plain_values():
-    sv_filter = make_sv_filter(sv_type="DEL", max_frequency=0.1, genes=["TP53"])
+    sv_filter = sv_filter_from(sv_type="DEL", max_frequency=0.1, genes=["TP53"])
     assert (sv_filter.svtype, sv_filter.max_allele_frequency, sv_filter.genes) == (
         "DEL", 0.1, ("TP53",))
-    assert make_sv_filter(sv_type="any").svtype is None
-    assert make_sv_filter(near_reference_gap="include").near_reference_gap is None
-    assert make_sv_filter(near_reference_gap="only").near_reference_gap is True
-    assert make_sv_filter(near_reference_gap="exclude").near_reference_gap is False
+    assert sv_filter.population_datasets == tuple(DATASETS)
+    assert sv_filter_from(sv_type="any").svtype is None
+    assert sv_filter_from(near_reference_gap="include").near_reference_gap is None
+    assert sv_filter_from(near_reference_gap="only").near_reference_gap is True
+    assert sv_filter_from(near_reference_gap="exclude").near_reference_gap is False
 
 
 # A database with three SVs:

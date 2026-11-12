@@ -31,8 +31,8 @@ def find_unknown_genes(genes, db_path, gene_info=GENE_INFO):
 
 
 # Turn the report's filter options into an SVFilter.
-def make_sv_filter(caller_support="any", min_samples=1, sv_type="any", max_frequency=None,
-                   genes=None, region=None, near_reference_gap="include"):
+def make_sv_filter(caller_support, min_samples, sv_type, max_frequency, genes, region,
+                   near_reference_gap):
     if caller_support == "any":
         callers = ()
     elif caller_support == "both":
