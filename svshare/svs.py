@@ -38,9 +38,9 @@ class SV:
     near_reference_gap: str | None = None
 
 
-# Where an SV ends: at its position if it's an insertion or breakend or has no
-# end, otherwise at its end.
-def sv_end(svtype, pos, vcf_end):
+# Where an SV ends on the reference: at its position if it's an insertion or
+# breakend or its VCF has no END, otherwise at its VCF END.
+def reference_end(svtype, pos, vcf_end):
     if svtype in POINT_TYPES or vcf_end is None:
         return pos
     return max(vcf_end, pos)
