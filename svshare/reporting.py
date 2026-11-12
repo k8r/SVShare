@@ -2,11 +2,15 @@
 import sys
 
 from .callers import CALLERS
-from .database import SVFilter, gene_names, select_sv_ids
+from .database import (SVFilter, gene_details, gene_names, overlapped_gene_regions,
+                       select_sv_ids, sv_calls, sv_rows)
 from .genes import GENE_INFO, read_gene_symbols
 from .population import DATASETS
-from .svs import load_svs
+from .svs import POINT_TYPES, SV, Call, Gene
 from .tsv import write_tsv
+
+# The order a gene's parts are listed in, roughly from upstream to downstream.
+REGION_ORDER = ["promoter", "UTR", "start_codon", "CDS", "stop_codon", "noncoding_exon", "intron"]
 
 
 # Combine --genes values and --gene-file lines into a sorted, deduplicated list.
@@ -45,6 +49,48 @@ def make_sv_filter(caller_support="any", min_samples=1, sv_type="any", max_frequ
         region=region,
         near_reference_gap={"include": None, "only": True, "exclude": False}[near_reference_gap],
     )
+
+
+# Sort key for chromosomes: numbered ones in number order, then X, Y, and M,
+# then the rest by name.
+def _chrom_order(chrom):
+    name = chrom.removeprefix("chr")
+    if name.isdigit():
+        return (0, int(name), "")
+    if name in ("X", "Y", "M"):
+        return (1, "XYM".index(name), "")
+    return (2, 0, name)
+
+
+# Return the SVs in sv_ids, in genome order.
+def load_svs(db_path, sv_ids):
+    calls, regions = {}, {}
+    for row in sv_calls(db_path, sv_ids):
+        calls.setdefault(row["sv_id"], []).append(
+            Call(row["sample"], row["caller"], row["genotype"], row["read_support"])
+        )
+    for row in overlapped_gene_regions(db_path, sv_ids):
+        gene = (row["gene_name"], row["gene_id"])
+        regions.setdefault(row["sv_id"], {}).setdefault(gene, set()).add(row["region"])
+    gene_info = gene_details(db_path)
+
+    svs = []
+    for row in sv_rows(db_path, sv_ids):
+        genes = []
+        for (name, gene_id), gene_regions in sorted(regions.get(row["sv_id"], {}).items()):
+            info = gene_info.get(gene_id, {})
+            genes.append(Gene(
+                name, info.get("full_name"), info.get("haploinsufficiency"),
+                info.get("triplosensitivity"), sorted(gene_regions, key=REGION_ORDER.index),
+            ))
+        svs.append(SV(
+            row["sv_id"], row["chrom"], row["pos"],
+            None if row["svtype"] in POINT_TYPES else row["vcf_end"],
+            row["svtype"], row["svlen"], row["gnomad_af"], row["colorsdb_af"],
+            calls.get(row["sv_id"], []), genes, row["near_reference_gap"],
+        ))
+    svs.sort(key=lambda sv: (_chrom_order(sv.chrom), sv.pos, sv.sv_id))
+    return svs
 
 
 # Ask a yes/no question, defaulting to no.
