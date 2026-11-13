@@ -1,8 +1,9 @@
 import gzip
 
-from helpers import make_database, read_rows
-from svshare.database import sv_positions
-from svshare.transcripts import add_sv_transcripts, transcript_regions, write_sv_windows_bed
+from svshare.svs import SV, SVPosition, Transcript, TranscriptPart
+from svshare.transcripts import (
+    count_affected_svs, find_sv_transcripts, transcript_regions, write_sv_windows_bed,
+)
 
 MANE = 'tag "basic"; tag "MANE_Select";'
 BASIC = 'tag "basic";'
@@ -121,64 +122,61 @@ def test_transcript_regions_splits_a_codon_split_across_exons(tmp_path):
     ], key=str)
 
 
-# Checks what's stored for two deletions, one at 1501-2500 and one away from all
-# genes. The cases it covers:
+# Checks which transcript parts two deletions get, one at 1501-2500 and one away
+# from all genes. The cases it covers:
 #   - the first deletion's window is 501-3500, the 1 kb minimum margin on each
-#     side, so every part of T1 and T1b in it is stored, and nothing of T2
-#   - parts are stored with their numbers and 1-based positions
+#     side, so it gets every part of T1 and T1b in it, and nothing of T2
+#   - parts have their numbers and 1-based positions, ordered by transcript and
+#     then position
 #   - only the parts the deletion itself overlaps are marked: T1's first CDS
 #     piece, T1's intron, T1b's promoter, and T1b's exon
-#   - the second deletion gets no rows
-def test_add_sv_transcripts_stores_parts_around_each_sv(tmp_path):
-    db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=1501, vcf_end=2500, svtype="DEL"),
-        dict(sv_id=2, chrom="chr1", pos=50001, vcf_end=50100, svtype="DEL"),
-    ])
-
-    _command, affected, total = add_sv_transcripts(db_path, write_gtf(tmp_path), tmp_path)
-
-    assert (affected, total) == (1, 2)
-    assert read_rows(db_path, "transcripts") == [
-        ("T1", "GENE1", "GENE1_ID", "protein_coding", 1, "chr1", "+"),
-        ("T1b", "GENE1", "GENE1_ID", "lncRNA", 0, "chr1", "+"),
+#   - the second deletion gets no parts
+def test_find_sv_transcripts_finds_parts_around_each_sv(tmp_path):
+    svs = [
+        SV(1, SVPosition("chr1", 1501, 2500, 2500, "DEL", -1000), []),
+        SV(2, SVPosition("chr1", 50001, 50100, 50100, "DEL", -100), []),
     ]
-    assert read_rows(db_path, "sv_transcript_parts") == [
-        (1, "T1", "promoter", None, 1, 1000, 0),
-        (1, "T1", "UTR", 1, 1001, 1200, 0),
-        (1, "T1", "start_codon", 1, 1201, 1203, 0),
-        (1, "T1", "CDS", 1, 1204, 2000, 1),
-        (1, "T1", "intron", 1, 2001, 3000, 1),
-        (1, "T1", "CDS", 2, 3001, 4800, 0),
-        (1, "T1b", "promoter", None, 201, 2200, 1),
-        (1, "T1b", "noncoding_exon", 1, 2201, 2400, 1),
+
+    find_sv_transcripts(svs, write_gtf(tmp_path), tmp_path)
+
+    t1 = Transcript("T1", "GENE1", "GENE1_ID", "protein_coding", True, "chr1", "+")
+    t1b = Transcript("T1b", "GENE1", "GENE1_ID", "lncRNA", False, "chr1", "+")
+    assert svs[0].transcript_parts == [
+        TranscriptPart(t1, "promoter", None, 1, 1000, False),
+        TranscriptPart(t1, "UTR", 1, 1001, 1200, False),
+        TranscriptPart(t1, "start_codon", 1, 1201, 1203, False),
+        TranscriptPart(t1, "CDS", 1, 1204, 2000, True),
+        TranscriptPart(t1, "intron", 1, 2001, 3000, True),
+        TranscriptPart(t1, "CDS", 2, 3001, 4800, False),
+        TranscriptPart(t1b, "promoter", None, 201, 2200, True),
+        TranscriptPart(t1b, "noncoding_exon", 1, 2201, 2400, True),
     ]
+    assert svs[1].transcript_parts == []
+    assert count_affected_svs(svs) == 1
 
 
 # Checks that an existing regions BED is reused instead of rebuilt from the GTF.
-def test_add_sv_transcripts_reuses_existing_regions_bed(tmp_path):
-    db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=1501, vcf_end=1600, svtype="DEL"),
-    ])
+def test_find_sv_transcripts_reuses_existing_regions_bed(tmp_path):
+    svs = [SV(1, SVPosition("chr1", 1501, 1600, 1600, "DEL", -100), [])]
     regions_bed = tmp_path / "regions.bed"
     regions_bed.write_text("\t".join(map(str, ("chr1", 1200, 2000, *T1, "CDS", 1, "+"))) + "\n")
 
-    add_sv_transcripts(db_path, tmp_path / "missing.gtf.gz", tmp_path, regions_bed)
+    find_sv_transcripts(svs, tmp_path / "missing.gtf.gz", tmp_path, regions_bed)
 
-    assert read_rows(
-        db_path, "sv_transcript_parts", "sv_id", "transcript_id", "region", "number", "overlaps_sv"
-    ) == [(1, "T1", "CDS", 1, 1)]
+    t1 = Transcript("T1", "GENE1", "GENE1_ID", "protein_coding", True, "chr1", "+")
+    assert svs[0].transcript_parts == [TranscriptPart(t1, "CDS", 1, 1201, 2000, True)]
 
 
-# Checks that an insertion covers just its position, even with cuteSV's END of
-# POS + 1, while a deletion covers its whole span.
-def test_write_sv_windows_bed_treats_insertions_as_points(tmp_path):
-    db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=5000, vcf_end=5001, svtype="INS"),
-        dict(sv_id=2, chrom="chr1", pos=9001, vcf_end=13000, svtype="DEL"),
-    ])
+# Checks that each SV's window is built around where it ends on the reference,
+# not its VCF END.
+def test_write_sv_windows_bed_uses_reference_end(tmp_path):
+    svs = [
+        SV(1, SVPosition("chr1", 5000, 5001, 5000, "INS", 300), []),
+        SV(2, SVPosition("chr1", 9001, 13000, 13000, "DEL", -4000), []),
+    ]
     windows_bed = tmp_path / "windows.bed"
 
-    write_sv_windows_bed(sv_positions(db_path), windows_bed)
+    write_sv_windows_bed(svs, windows_bed)
 
     assert windows_bed.read_text().splitlines() == [
         "chr1\t3999\t6000\t1\t4999\t5000",

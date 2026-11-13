@@ -4,11 +4,12 @@ from pathlib import Path
 
 from .callers import CALLERS, caller_vcf_path, cutesv_min_support
 from .database import (
-    save_population_matches, save_reference_gaps, save_tool_runs, write_database,
+    save_population_matches, save_reference_gaps, save_tool_runs, save_transcripts,
+    write_database,
 )
 from .gaps import add_reference_gaps
 from .genes import add_genes
-from .transcripts import add_sv_transcripts
+from .transcripts import count_affected_svs, find_sv_transcripts
 from .merging import VCFPreppedForMerging, drop_0_0_calls, run_jasmine
 from .population import DATASETS, add_population_frequencies
 from .reference import check_bam_reference_compatibility, ensure_reference_index
@@ -33,7 +34,7 @@ def run(args):
 
     _find_reference_gaps(db_path, svs, args.reference)
     _look_up_population_frequencies(db_path, svs, args)
-    gene_run = _find_genes(db_path, args)
+    gene_run = _find_genes(db_path, svs, args)
     if gene_run:
         tool_runs.append(gene_run)
 
@@ -150,17 +151,16 @@ def _look_up_population_frequencies(db_path, svs, args):
 
 # Find the genes each SV overlaps, if --gencode was given. Returns the tool run,
 # or None.
-def _find_genes(db_path, args):
+def _find_genes(db_path, svs, args):
     if not args.gencode:
         print("\nNo --gencode file given, so SVs weren't matched to genes")
         return None
     print("\nFinding the genes each SV affects")
     if args.regions_bed and args.regions_bed.exists():
         print(f"  using existing transcript regions: {args.regions_bed}")
-    gene_run, affected, total = add_sv_transcripts(
-        db_path, args.gencode, args.output, args.regions_bed
-    )
-    print(f"  {affected} of {total} SVs overlap a gene")
+    gene_run = find_sv_transcripts(svs, args.gencode, args.output, args.regions_bed)
+    save_transcripts(db_path, svs)
+    print(f"  {count_affected_svs(svs)} of {len(svs)} SVs overlap a gene")
     with_summary, with_dosage, genes = add_genes(db_path)
     print(f"  {genes} genes nearby: {with_summary} with a summary, "
           f"{with_dosage} with ClinGen dosage scores")

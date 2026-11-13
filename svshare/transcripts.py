@@ -4,8 +4,7 @@ import re
 from pathlib import Path
 
 from .commands import ToolRun, run_command
-from .database import save_transcripts, sv_positions
-from .svs import reference_end
+from .svs import Transcript, TranscriptPart
 
 # The GTF doesn't include promoters, so each transcript's promoter is taken to be
 # the PROMOTER_SIZE bp just upstream of its start.
@@ -127,18 +126,18 @@ def split_out_codons(rows, codons):
 # Write a BED file with each SV widened by its view margin.
 def write_sv_windows_bed(svs, path):
     with open(path, "w") as f:
-        for sv_id, sv in svs.items():
-            start = sv.pos - 1
-            end = reference_end(sv.svtype, sv.pos, sv.vcf_end)
+        for sv in svs:
+            position = sv.position
+            start, end = position.pos - 1, position.reference_end
             margin = max(MIN_VIEW_MARGIN, round(VIEW_MARGIN_FRACTION * (end - start)))
             window_start, window_end = max(0, start - margin), end + margin
-            row = (sv.chrom, window_start, window_end, sv_id, start, end)
+            row = (position.chrom, window_start, window_end, sv.sv_id, start, end)
             f.write("\t".join(map(str, row)) + "\n")
 
 
-# Save the transcripts near each SV and the parts of them it overlaps. Returns
-# (the bedtools run, SVs overlapping a transcript, total SVs).
-def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
+# Add to each SV the parts of transcripts near it, by transcript and then
+# position. Returns the bedtools run.
+def find_sv_transcripts(svs, gtf, out_dir, regions_bed=None):
     out_dir = Path(out_dir)
     windows_bed = out_dir / SV_WINDOWS_BED
     overlaps_bed = out_dir / OVERLAPS_BED
@@ -152,7 +151,6 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
                 for row in transcript_regions(gtf)
             )
 
-    svs = sv_positions(db_path)
     write_sv_windows_bed(svs, windows_bed)
     cmd = ["bedtools", "intersect", "-a", str(windows_bed), "-b", str(regions_bed),
            "-wa", "-wb"]
@@ -161,7 +159,8 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
 
     # Each line is the SV window's 6 columns followed by the transcript
     # region's 11. BED positions start at 0, but SVShare's start at 1.
-    transcripts, parts = {}, set()
+    svs_by_id = {sv.sv_id: sv for sv in svs}
+    transcripts = {}
     with open(overlaps_bed) as f:
         for line in f:
             fields = line.rstrip("\n").split("\t")
@@ -169,12 +168,21 @@ def add_sv_transcripts(db_path, gtf, out_dir, regions_bed=None):
             (chrom, start, end, gene_name, gene_id, transcript_id, transcript_type,
              mane_select, region, number, strand) = fields[6:17]
             start, end = int(start), int(end)
-            transcripts[transcript_id] = (gene_name, gene_id, transcript_type,
-                                          int(mane_select), chrom, strand)
-            parts.add((sv_id, transcript_id, region,
-                       None if number == "." else int(number), start + 1, end,
-                       int(start < sv_end and end > sv_start)))
+            if transcript_id not in transcripts:
+                transcripts[transcript_id] = Transcript(
+                    transcript_id, gene_name, gene_id, transcript_type, mane_select == "1",
+                    chrom, strand,
+                )
+            svs_by_id[sv_id].transcript_parts.append(TranscriptPart(
+                transcripts[transcript_id], region, None if number == "." else int(number),
+                start + 1, end, start < sv_end and end > sv_start,
+            ))
 
-    save_transcripts(db_path, transcripts, parts)
-    affected = {part[0] for part in parts if part[6]}
-    return ToolRun(None, "bedtools", cmd, overlaps_bed), len(affected), len(svs)
+    for sv in svs:
+        sv.transcript_parts.sort(key=lambda part: (part.transcript.transcript_id, part.pos))
+    return ToolRun(None, "bedtools", cmd, overlaps_bed)
+
+
+# Return how many SVs overlap a part of a transcript.
+def count_affected_svs(svs):
+    return sum(any(part.overlaps_sv for part in sv.transcript_parts) for sv in svs)

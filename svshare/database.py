@@ -34,7 +34,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from .svs import SVPosition
 
 SCHEMA = """
 CREATE TABLE svs (
@@ -137,20 +136,6 @@ def connect(db_path):
             yield db
     finally:
         db.close()
-
-
-# Return every SV's position, type, and length, by SV ID.
-def sv_positions(db_path):
-    with connect(db_path) as db:
-        return {
-            row["sv_id"]: SVPosition(
-                chrom=row["chrom"], pos=row["pos"], vcf_end=row["vcf_end"],
-                reference_end=row["reference_end"], svtype=row["svtype"], svlen=row["svlen"],
-            )
-            for row in db.execute(
-                "SELECT sv_id, chrom, pos, vcf_end, reference_end, svtype, svlen FROM svs"
-            )
-        }
 
 
 # Return the ID of every gene with a saved transcript, sorted.
@@ -330,18 +315,25 @@ def save_genes(db_path, rows):
         )
 
 
-# Save the transcripts near SVs, by ID, and the parts of them near each SV.
-def save_transcripts(db_path, transcripts, parts):
+# Save the transcripts near each SV, once each, and the parts of them near it.
+def save_transcripts(db_path, svs):
+    transcripts = {part.transcript.transcript_id: part.transcript
+                   for sv in svs for part in sv.transcript_parts}
     with connect(db_path) as db:
         db.executemany(
             "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
             " mane_select, chrom, strand) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [(transcript_id, *values) for transcript_id, values in sorted(transcripts.items())],
+            [(transcript.transcript_id, transcript.gene_name, transcript.gene_id,
+              transcript.transcript_type, transcript.mane_select, transcript.chrom,
+              transcript.strand)
+             for _, transcript in sorted(transcripts.items())],
         )
         db.executemany(
             "INSERT INTO sv_transcript_parts (sv_id, transcript_id, region, number, pos,"
             " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            sorted(parts, key=lambda part: (part[0], part[1], part[4])),
+            [(sv.sv_id, part.transcript.transcript_id, part.region, part.number, part.pos,
+              part.end, part.overlaps_sv)
+             for sv in svs for part in sv.transcript_parts],
         )
 
 
