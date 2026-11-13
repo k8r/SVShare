@@ -1,8 +1,8 @@
 import pysam
 import pytest
 
-from helpers import make_database, read_rows
 from svshare.population import add_population_frequencies, best_match
+from svshare.svs import SV, SVPosition
 
 # SVLEN is declared Number=1 in gnomAD and Number=. in CoLoRSdb.
 HEADER = """##fileformat=VCFv4.2
@@ -68,16 +68,16 @@ def test_best_match_accepts_records_without_filter_or_id(tmp_path):
 
 
 # Checks that matched SVs get the dataset's ID and frequency, and that the rest,
-# including a BND, which isn't looked up, are left NULL.
+# including a BND, which isn't looked up, are left empty.
 def test_add_population_frequencies_fills_matched_svs_only(tmp_path):
     write_population_vcf(tmp_path, [("del", 1000, "PASS", "DEL", 1150, 150, 0.25)])
-    db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=1000, vcf_end=1150, svtype="DEL", svlen=-150),
-        dict(sv_id=2, chrom="chr1", pos=50000, vcf_end=50150, svtype="DEL", svlen=-150),
-        dict(sv_id=3, chrom="chr1", pos=1000, vcf_end=1000, svtype="BND"),
-    ])
+    svs = [
+        SV(1, SVPosition("chr1", 1000, 1150, 1150, "DEL", -150), []),
+        SV(2, SVPosition("chr1", 50000, 50150, 50150, "DEL", -150), []),
+        SV(3, SVPosition("chr1", 1000, 1000, 1000, "BND", None), []),
+    ]
 
-    assert add_population_frequencies(db_path, "gnomad", tmp_path / "population.vcf.gz") == (1, 3)
-    assert read_rows(db_path, "svs", "sv_id", "gnomad_id", "gnomad_af") == [
-        (1, "del", 0.25), (2, None, None), (3, None, None),
+    assert add_population_frequencies(svs, "gnomad", tmp_path / "population.vcf.gz") == 1
+    assert [(sv.gnomad_id, sv.gnomad_af, sv.colorsdb_id, sv.colorsdb_af) for sv in svs] == [
+        ("del", 0.25, None, None), (None, None, None, None), (None, None, None, None),
     ]

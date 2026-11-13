@@ -345,13 +345,15 @@ def save_transcripts(db_path, transcripts, parts):
         )
 
 
-# Save the ID and allele frequency of the population dataset record each SV in
-# matches, by ID, matched. dataset is the prefix of its columns in svs.
-def save_population_matches(db_path, dataset, matches):
+# Save the ID and allele frequency of the gnomAD and CoLoRSdb records each SV
+# matched.
+def save_population_matches(db_path, svs):
     with connect(db_path) as db:
         db.executemany(
-            f"UPDATE svs SET {dataset}_id = ?, {dataset}_af = ? WHERE sv_id = ?",
-            [(record_id, af, sv_id) for sv_id, (record_id, af) in matches.items()],
+            "UPDATE svs SET gnomad_id = ?, gnomad_af = ?, colorsdb_id = ?, colorsdb_af = ?"
+            " WHERE sv_id = ?",
+            [(sv.gnomad_id, sv.gnomad_af, sv.colorsdb_id, sv.colorsdb_af, sv.sv_id)
+             for sv in svs],
         )
 
 

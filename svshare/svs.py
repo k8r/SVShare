@@ -47,7 +47,9 @@ class SV:
     position: SVPosition
     calls: list[Call]
     genes: list[Gene] = field(default_factory=list)
+    gnomad_id: str | None = None
     gnomad_af: float | None = None
+    colorsdb_id: str | None = None
     colorsdb_af: float | None = None
     near_reference_gap: str | None = None
 

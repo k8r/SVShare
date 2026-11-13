@@ -4,8 +4,6 @@ import math
 
 import pysam
 
-from .database import save_population_matches, sv_positions
-
 # The population datasets SVs can be looked up in, by the prefix of their
 # columns in the svs table (e.g. gnomad_af), with the name to show for each.
 DATASETS = {"gnomad": "gnomAD", "colorsdb": "CoLoRSdb"}
@@ -73,19 +71,24 @@ def best_match(vcf, chrom, pos, end, svtype, svlen):
     return best[:2] if best else None
 
 
-# Look up each SV in the database in a population dataset and save the matching
-# record's ID and allele frequency, e.g. in gnomad_id and gnomad_af. dataset is
-# a key of DATASETS, and vcf_path needs its .tbi index next to it.
-# Returns (SVs matched, total SVs).
-def add_population_frequencies(db_path, dataset, vcf_path):
+# Look up each SV in a population dataset and set its ID and allele frequency
+# for that dataset from the matching record, e.g. gnomad_id and gnomad_af.
+# dataset is a key of DATASETS, and vcf_path needs its .tbi index next to it.
+# Returns how many SVs matched.
+def add_population_frequencies(svs, dataset, vcf_path):
     if dataset not in DATASETS:
         raise ValueError(f"Unknown population dataset: {dataset}")
-    svs = sv_positions(db_path)
-    matches = {}
+    matched = 0
     with pysam.VariantFile(str(vcf_path)) as vcf:
-        for sv_id, sv in svs.items():
-            match = best_match(vcf, sv.chrom, sv.pos, sv.vcf_end, sv.svtype, sv.svlen)
-            if match:
-                matches[sv_id] = match
-    save_population_matches(db_path, dataset, matches)
-    return len(matches), len(svs)
+        for sv in svs:
+            position = sv.position
+            match = best_match(vcf, position.chrom, position.pos, position.vcf_end,
+                               position.svtype, position.svlen)
+            if not match:
+                continue
+            if dataset == "gnomad":
+                sv.gnomad_id, sv.gnomad_af = match
+            else:
+                sv.colorsdb_id, sv.colorsdb_af = match
+            matched += 1
+    return matched

@@ -3,7 +3,9 @@ import sys
 from pathlib import Path
 
 from .callers import CALLERS, caller_vcf_path, cutesv_min_support
-from .database import save_reference_gaps, save_tool_runs, write_database
+from .database import (
+    save_population_matches, save_reference_gaps, save_tool_runs, write_database,
+)
 from .gaps import add_reference_gaps
 from .genes import add_genes
 from .transcripts import add_sv_transcripts
@@ -30,7 +32,7 @@ def run(args):
     db_path = write_database(args.output / DATABASE, svs)
 
     _find_reference_gaps(db_path, svs, args.reference)
-    _look_up_population_frequencies(db_path, args)
+    _look_up_population_frequencies(db_path, svs, args)
     gene_run = _find_genes(db_path, args)
     if gene_run:
         tool_runs.append(gene_run)
@@ -133,16 +135,17 @@ def _find_reference_gaps(db_path, svs, reference):
     print(f"  {near} of {len(svs)} SVs are at or near a gap")
 
 
-def _look_up_population_frequencies(db_path, args):
+def _look_up_population_frequencies(db_path, svs, args):
     population_vcfs = {"gnomad": args.gnomad, "colorsdb": args.colorsdb}
     for dataset, vcf in population_vcfs.items():
         name = DATASETS[dataset]
         if vcf:
             print(f"\nLooking up SVs in {name}")
-            matched, total = add_population_frequencies(db_path, dataset, vcf)
-            print(f"  {matched} of {total} SVs found in {name}")
+            matched = add_population_frequencies(svs, dataset, vcf)
+            print(f"  {matched} of {len(svs)} SVs found in {name}")
         else:
             print(f"\nNo --{dataset} file given, so SVs weren't looked up in {name}")
+    save_population_matches(db_path, svs)
 
 
 # Find the genes each SV overlaps, if --gencode was given. Returns the tool run,
