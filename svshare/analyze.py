@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 from .callers import CALLERS, caller_vcf_path, cutesv_min_support
-from .database import save_tool_runs, write_database
+from .database import save_reference_gaps, save_tool_runs, write_database
 from .gaps import add_reference_gaps
 from .genes import add_genes
 from .transcripts import add_sv_transcripts
@@ -29,7 +29,7 @@ def run(args):
     svs = read_merged_svs(args.output / MERGED_VCF, prepped_vcfs)
     db_path = write_database(args.output / DATABASE, svs)
 
-    _find_reference_gaps(db_path, args.reference)
+    _find_reference_gaps(db_path, svs, args.reference)
     _look_up_population_frequencies(db_path, args)
     gene_run = _find_genes(db_path, args)
     if gene_run:
@@ -126,10 +126,11 @@ def _merge_calls(args, prepped_vcfs):
     return tool_run
 
 
-def _find_reference_gaps(db_path, reference):
+def _find_reference_gaps(db_path, svs, reference):
     print("\nFinding SVs near gaps in the reference")
-    near, total = add_reference_gaps(db_path, reference)
-    print(f"  {near} of {total} SVs are at or near a gap")
+    near = add_reference_gaps(svs, reference)
+    save_reference_gaps(db_path, svs)
+    print(f"  {near} of {len(svs)} SVs are at or near a gap")
 
 
 def _look_up_population_frequencies(db_path, args):

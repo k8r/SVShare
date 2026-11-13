@@ -5,9 +5,6 @@ import re
 
 import pysam
 
-from .database import save_reference_gaps, sv_positions
-from .svs import reference_end
-
 # The fewest N's in a row that count as a gap; shorter runs are usually just
 # uncertain bases.
 MIN_GAP_LENGTH = 10
@@ -52,16 +49,16 @@ def describe_nearest_gap(chrom_gaps, start, end, max_distance=MAX_DISTANCE):
     return None
 
 
-# Save, for each SV in the database at or near a gap in the reference, how
-# close it is. Returns (SVs near a gap, total SVs).
-def add_reference_gaps(db_path, reference):
+# Set near_reference_gap on each SV at or near a gap in the reference. Returns
+# how many are.
+def add_reference_gaps(svs, reference):
     gaps = find_gaps(reference)
-    svs = sv_positions(db_path)
-    near = {}
-    for sv_id, sv in svs.items():
-        description = describe_nearest_gap(gaps.get(sv.chrom, []), sv.pos,
-                                           reference_end(sv.svtype, sv.pos, sv.vcf_end))
-        if description:
-            near[sv_id] = description
-    save_reference_gaps(db_path, near)
-    return len(near), len(svs)
+    near = 0
+    for sv in svs:
+        position = sv.position
+        sv.near_reference_gap = describe_nearest_gap(
+            gaps.get(position.chrom, []), position.pos, position.reference_end
+        )
+        if sv.near_reference_gap:
+            near += 1
+    return near

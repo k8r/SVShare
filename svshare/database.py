@@ -355,12 +355,12 @@ def save_population_matches(db_path, dataset, matches):
         )
 
 
-# Save how close each SV in descriptions, by ID, is to a gap in the reference.
-def save_reference_gaps(db_path, descriptions):
+# Save how close each SV is to a gap in the reference.
+def save_reference_gaps(db_path, svs):
     with connect(db_path) as db:
         db.executemany(
             "UPDATE svs SET near_reference_gap = ? WHERE sv_id = ?",
-            [(description, sv_id) for sv_id, description in descriptions.items()],
+            [(sv.near_reference_gap, sv.sv_id) for sv in svs if sv.near_reference_gap],
         )
 
 

@@ -1,7 +1,7 @@
 import pysam
 
-from helpers import make_database, read_rows
 from svshare.gaps import add_reference_gaps, describe_nearest_gap, find_gaps
+from svshare.svs import SV, SVPosition
 
 
 # chr1 has a 20-base gap at 101-120 and a run of 5 N's too short to count; chr2
@@ -30,17 +30,17 @@ def test_describe_nearest_gap():
     assert describe_nearest_gap([], 100, 200) is None
 
 
-# Insertions are checked at their position only, since their end position
-# isn't where they end.
+# Each SV is checked from its position to where it ends on the reference, not
+# to its VCF END.
 def test_add_reference_gaps(tmp_path):
-    db_path = make_database(tmp_path, svs=[
-        dict(sv_id=1, chrom="chr1", pos=50, vcf_end=150, svtype="DEL"),
-        dict(sv_id=2, chrom="chr1", pos=800, vcf_end=5000, svtype="INS"),
-        dict(sv_id=3, chrom="chr1", pos=1200, vcf_end=1200, svtype="INS"),
-        dict(sv_id=4, chrom="chr3", pos=10, vcf_end=20, svtype="DEL"),
-    ])
+    svs = [
+        SV(1, SVPosition("chr1", 50, 150, 150, "DEL", -100), []),
+        SV(2, SVPosition("chr1", 800, 5000, 800, "INS", 300), []),
+        SV(3, SVPosition("chr1", 1200, 1200, 1200, "INS", 300), []),
+        SV(4, SVPosition("chr3", 10, 20, 20, "DEL", -10), []),
+    ]
 
-    assert add_reference_gaps(db_path, write_reference(tmp_path)) == (2, 4)
-    assert read_rows(db_path, "svs", "sv_id", "near_reference_gap") == [
-        (1, "overlaps 20 unknown bases"), (2, "680 bp from 20 unknown bases"), (3, None), (4, None),
+    assert add_reference_gaps(svs, write_reference(tmp_path)) == 2
+    assert [sv.near_reference_gap for sv in svs] == [
+        "overlaps 20 unknown bases", "680 bp from 20 unknown bases", None, None,
     ]
