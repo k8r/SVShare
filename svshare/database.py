@@ -34,8 +34,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from .svs import SVPosition, reference_end
-from .vcf_reader import int_or_none, read_jasmine_groups, read_vcf_records
+from .svs import SVPosition
 
 SCHEMA = """
 CREATE TABLE svs (
@@ -291,48 +290,31 @@ def select_sv_ids(db_path, sv_filter):
         )]
 
 
-# Write the database to db_path, replacing any earlier one. prepped_vcfs lists
-# the VCFs prepped for merging, in the order Jasmine was given them.
-def write_database(merged_vcf, prepped_vcfs, db_path):
-    calls_by_input = [
-        {call_id: (chrom, pos, info, fmt)
-         for call_id, chrom, pos, info, fmt in read_vcf_records(prepped_vcf.vcf)}
-        for prepped_vcf in prepped_vcfs
-    ]
-
+# Write the SVs and their calls to a new database at db_path, replacing any
+# earlier one.
+def write_database(db_path, svs):
     db_path = Path(db_path)
     db_path.unlink(missing_ok=True)
     with connect(db_path) as db:
         db.executescript(SCHEMA)
-
-        for sv_id, (chrom, pos, vcf_end, svtype, svlen, members) in enumerate(
-            read_jasmine_groups(merged_vcf), start=1
-        ):
-            calls = []
-            for index, vcf_id in members:
-                prepped_vcf = prepped_vcfs[index]
-                call_chrom, call_pos, info, fmt = calls_by_input[index][vcf_id]
-                calls.append((
-                    sv_id, prepped_vcf.sample, prepped_vcf.caller, vcf_id, call_chrom, call_pos,
-                    int_or_none(info.get("END")), info.get("SVTYPE"),
-                    int_or_none(info.get("SVLEN")), fmt.get("GT"),
-                    # Both sniffles2 and cuteSV report variant-supporting reads as DV.
-                    int_or_none(fmt.get("DV")),
-                ))
-
-            starts = [call[5] for call in calls]
-            lengths = [abs(call[8]) for call in calls if call[8] is not None]
+        for sv in svs:
+            position = sv.position
+            starts = [call.pos for call in sv.calls]
+            lengths = [abs(call.svlen) for call in sv.calls if call.svlen is not None]
             db.execute(
                 "INSERT INTO svs (sv_id, chrom, pos, vcf_end, reference_end, svtype, svlen,"
                 " start_spread, length_spread) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (sv_id, chrom, pos, vcf_end, reference_end(svtype, pos, vcf_end), svtype, svlen,
+                (sv.sv_id, position.chrom, position.pos, position.vcf_end,
+                 position.reference_end, position.svtype, position.svlen,
                  max(starts) - min(starts), max(lengths) - min(lengths) if lengths else None),
             )
             db.executemany(
                 "INSERT INTO calls (sv_id, sample, caller, vcf_id, chrom, pos, vcf_end,"
                 " svtype, svlen, genotype, read_support)"
                 " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                calls,
+                [(sv.sv_id, call.sample, call.caller, call.vcf_id, call.chrom, call.pos,
+                  call.vcf_end, call.svtype, call.svlen, call.genotype, call.read_support)
+                 for call in sv.calls],
             )
     return db_path
 

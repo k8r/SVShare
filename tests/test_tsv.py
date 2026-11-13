@@ -3,8 +3,8 @@ from svshare.tsv import COLUMNS, _row, write_tsv
 
 
 def make_sv(calls=(), genes=(), near_reference_gap=None):
-    return SV(1, SVPosition("chr2", 300, 300, 300, "INS", 50), None, 0.005, list(calls),
-              list(genes), near_reference_gap)
+    return SV(1, SVPosition("chr2", 300, 300, 300, "INS", 50), list(calls), list(genes),
+              colorsdb_af=0.005, near_reference_gap=near_reference_gap)
 
 
 # Callers' genotypes are listed separately only where they differ, and unknown

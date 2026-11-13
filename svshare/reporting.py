@@ -88,8 +88,9 @@ def load_svs(db_path, sv_ids):
             reference_end=row["reference_end"], svtype=row["svtype"], svlen=row["svlen"],
         )
         svs.append(SV(
-            row["sv_id"], position, row["gnomad_af"], row["colorsdb_af"],
-            calls.get(row["sv_id"], []), genes, row["near_reference_gap"],
+            row["sv_id"], position, calls.get(row["sv_id"], []), genes,
+            gnomad_af=row["gnomad_af"], colorsdb_af=row["colorsdb_af"],
+            near_reference_gap=row["near_reference_gap"],
         ))
     svs.sort(key=lambda sv: (_chrom_order(sv.position.chrom), sv.position.pos, sv.sv_id))
     return svs

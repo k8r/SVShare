@@ -278,17 +278,16 @@ def test_svs_are_in_genome_order_and_only_the_given_ones(tmp_path):
 def test_load_svs(tmp_path):
     svs = load_svs(write_load_test_database(tmp_path), [1, 2, 3])
     assert svs == [
-        SV(3, SVPosition("chr2", 100, 9000, 100, "BND", 0), None, None,
+        SV(3, SVPosition("chr2", 100, 9000, 100, "BND", 0),
            [Call("HG003", "sniffles2", "0/1", 5)],
            [Gene("GENE2", None, None, None, ["promoter"])]),
-        SV(2, SVPosition("chr2", 300, 300, 300, "INS", 50), None, 0.005,
+        SV(2, SVPosition("chr2", 300, 300, 300, "INS", 50),
            [Call("HG002", "cutesv", "0|1", 6), Call("HG002", "sniffles2", "0|1", 6)],
            [Gene("GENE1", "gene one", "Sufficient evidence", None, ["UTR", "intron"])],
-           "350 bp from 20 unknown bases"),
-        SV(1, SVPosition("chr10", 500, 600, 600, "DEL", -100), None, None,
+           colorsdb_af=0.005, near_reference_gap="350 bp from 20 unknown bases"),
+        SV(1, SVPosition("chr10", 500, 600, 600, "DEL", -100),
            [Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
-            Call("HG003", "cutesv", "./.", None)],
-           []),
+            Call("HG003", "cutesv", "./.", None)]),
     ]
 
 

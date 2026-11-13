@@ -1,16 +1,23 @@
 # What an SV is: where it is, the calls of it, and the genes it overlaps.
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # SV types that sit at one position, whatever end their caller gave.
 POINT_TYPES = ("INS", "BND")
 
 
+# One caller's call of an SV in one sample, as its VCF recorded it.
 @dataclass
 class Call:
     sample: str
     caller: str
     genotype: str | None
     read_support: int | None = None
+    vcf_id: str | None = None
+    chrom: str | None = None
+    pos: int | None = None
+    vcf_end: int | None = None
+    svtype: str | None = None
+    svlen: int | None = None
 
 
 # A gene an SV overlaps, with the parts of it the SV overlaps in any transcript.
@@ -38,10 +45,10 @@ class SVPosition:
 class SV:
     sv_id: int
     position: SVPosition
-    gnomad_af: float | None
-    colorsdb_af: float | None
     calls: list[Call]
-    genes: list[Gene]
+    genes: list[Gene] = field(default_factory=list)
+    gnomad_af: float | None = None
+    colorsdb_af: float | None = None
     near_reference_gap: str | None = None
 
 
