@@ -21,7 +21,7 @@ DATABASE = "svshare.db"
 def run(args):
     _make_paths_absolute(args)
     ensure_reference_index(args.reference)
-    platforms = _check_samples(args)
+    platforms = _check_reference_and_find_platforms(args)
 
     args.output.mkdir(parents=True, exist_ok=True)
     tool_runs, prepped_vcfs = _call_svs(args, platforms)
@@ -52,7 +52,7 @@ def _make_paths_absolute(args):
 
 # Check each sample matches the reference and find its sequencing platform,
 # exiting if either fails. Returns each sample's platform.
-def _check_samples(args):
+def _check_reference_and_find_platforms(args):
     all_issues = []
     platforms = {}
     print(f"Analyzing {len(args.samples)} sample(s):")
