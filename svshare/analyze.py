@@ -25,8 +25,9 @@ def run(args):
 
     args.output.mkdir(parents=True, exist_ok=True)
     tool_runs, prepped_vcfs = _call_svs(args, platforms)
-    tool_runs.append(_merge_calls(args, prepped_vcfs))
-    svs = read_merged_svs(args.output / MERGED_VCF, prepped_vcfs)
+    merged_vcf, tool_run = _merge_calls(args, prepped_vcfs)
+    tool_runs.append(tool_run)
+    svs = read_merged_svs(merged_vcf, prepped_vcfs)
 
     _find_reference_gaps(svs, args.reference)
     _look_up_population_frequencies(svs, args)
@@ -117,12 +118,12 @@ def _call_sample_svs(args, bam, platform):
     return tool_runs, prepped_vcfs
 
 
-# Group calls of the same SV across all samples and callers. Returns the tool run.
+# Group calls of the same SV across all samples and callers. Returns the merged
+# VCF and the tool run.
 def _merge_calls(args, prepped_vcfs):
     print("\nMerging all samples and callers with Jasmine")
     vcfs = [prepped_vcf.vcf for prepped_vcf in prepped_vcfs]
-    _vcf, tool_run = run_jasmine(vcfs, args.output / MERGED_VCF, args.output)
-    return tool_run
+    return run_jasmine(vcfs, args.output / MERGED_VCF, args.output)
 
 
 def _find_reference_gaps(svs, reference):
