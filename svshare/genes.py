@@ -3,7 +3,7 @@
 import csv
 from pathlib import Path
 
-from .database import gene_ids, save_genes
+from .svs import GeneDetails
 
 GENE_INFO = Path(__file__).parent / "data" / "gene_info.tsv"
 
@@ -27,24 +27,31 @@ def read_gene_symbols(path=GENE_INFO):
     return {row["symbol"] for row in read_gene_info(path).values()}
 
 
-# Store a row in genes for each gene in transcripts, with whatever the gene info
-# file has for it. Returns (genes with a summary, genes with ClinGen scores,
-# total genes).
-def add_genes(db_path, gene_info=GENE_INFO):
+# Set gene_details on each transcript near the SVs, with whatever the gene info
+# file has for its gene. Transcripts of the same gene share one GeneDetails.
+# Returns (genes with a summary, genes with ClinGen scores, total genes).
+def add_genes(svs, gene_info=GENE_INFO):
     info = read_gene_info(gene_info)
-    rows = []
-    for gene_id in gene_ids(db_path):
-        # GENCODE's gene IDs carry a version, e.g. ENSG00000159842.18.
-        gene = info.get(gene_id.split(".")[0])
-        if gene is None:
-            rows.append((gene_id, None, None, None, None, None, None, None))
-            continue
-        rows.append((
-            gene_id, gene["hgnc_id"], gene["name"], gene["summary"] or None,
-            _score(gene["haploinsufficiency_score"]), gene["haploinsufficiency"] or None,
-            _score(gene["triplosensitivity_score"]), gene["triplosensitivity"] or None,
-        ))
-    save_genes(db_path, rows)
-    with_summary = sum(1 for row in rows if row[3])
-    with_dosage = sum(1 for row in rows if row[5])
-    return with_summary, with_dosage, len(rows)
+    genes = {}
+    for sv in svs:
+        for part in sv.transcript_parts:
+            transcript = part.transcript
+            if transcript.gene_id not in genes:
+                genes[transcript.gene_id] = _gene_details(transcript.gene_id, info)
+            transcript.gene_details = genes[transcript.gene_id]
+    with_summary = sum(1 for details in genes.values() if details.summary)
+    with_dosage = sum(1 for details in genes.values() if details.haploinsufficiency)
+    return with_summary, with_dosage, len(genes)
+
+
+# Return what info, from read_gene_info, says about the gene with gene_id.
+def _gene_details(gene_id, info):
+    # GENCODE's gene IDs carry a version, e.g. ENSG00000159842.18.
+    gene = info.get(gene_id.split(".")[0])
+    if gene is None:
+        return GeneDetails(gene_id)
+    return GeneDetails(
+        gene_id, gene["hgnc_id"], gene["name"], gene["summary"] or None,
+        _score(gene["haploinsufficiency_score"]), gene["haploinsufficiency"] or None,
+        _score(gene["triplosensitivity_score"]), gene["triplosensitivity"] or None,
+    )

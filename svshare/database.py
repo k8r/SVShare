@@ -138,14 +138,6 @@ def connect(db_path):
         db.close()
 
 
-# Return the ID of every gene with a saved transcript, sorted.
-def gene_ids(db_path):
-    with connect(db_path) as db:
-        return [row["gene_id"] for row in db.execute(
-            "SELECT DISTINCT gene_id FROM transcripts ORDER BY gene_id"
-        )]
-
-
 # Return the name of every gene with a saved transcript.
 def gene_names(db_path):
     with connect(db_path) as db:
@@ -304,14 +296,19 @@ def write_database(db_path, svs):
     return db_path
 
 
-# Save each gene's names, summary, and dosage sensitivity scores.
-def save_genes(db_path, rows):
+# Save the details of each gene near the SVs, once each.
+def save_genes(db_path, svs):
+    genes = {part.transcript.gene_details.gene_id: part.transcript.gene_details
+             for sv in svs for part in sv.transcript_parts if part.transcript.gene_details}
     with connect(db_path) as db:
         db.executemany(
             "INSERT INTO genes (gene_id, hgnc_id, full_name, summary,"
             " haploinsufficiency_score, haploinsufficiency, triplosensitivity_score,"
             " triplosensitivity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            rows,
+            [(gene.gene_id, gene.hgnc_id, gene.full_name, gene.summary,
+              gene.haploinsufficiency_score, gene.haploinsufficiency,
+              gene.triplosensitivity_score, gene.triplosensitivity)
+             for _, gene in sorted(genes.items())],
         )
 
 

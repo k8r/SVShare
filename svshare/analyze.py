@@ -4,8 +4,8 @@ from pathlib import Path
 
 from .callers import CALLERS, caller_vcf_path, cutesv_min_support
 from .database import (
-    save_population_matches, save_reference_gaps, save_tool_runs, save_transcripts,
-    write_database,
+    save_genes, save_population_matches, save_reference_gaps, save_tool_runs,
+    save_transcripts, write_database,
 )
 from .gaps import add_reference_gaps
 from .genes import add_genes
@@ -161,7 +161,8 @@ def _find_genes(db_path, svs, args):
     gene_run = find_sv_transcripts(svs, args.gencode, args.output, args.regions_bed)
     save_transcripts(db_path, svs)
     print(f"  {count_affected_svs(svs)} of {len(svs)} SVs overlap a gene")
-    with_summary, with_dosage, genes = add_genes(db_path)
+    with_summary, with_dosage, genes = add_genes(svs)
+    save_genes(db_path, svs)
     print(f"  {genes} genes nearby: {with_summary} with a summary, "
           f"{with_dosage} with ClinGen dosage scores")
     return gene_run

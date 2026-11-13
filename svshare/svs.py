@@ -30,6 +30,19 @@ class Gene:
     regions: list[str]
 
 
+# What the gene info file says about a gene near an SV.
+@dataclass
+class GeneDetails:
+    gene_id: str
+    hgnc_id: str | None = None
+    full_name: str | None = None
+    summary: str | None = None
+    haploinsufficiency_score: int | None = None
+    haploinsufficiency: str | None = None
+    triplosensitivity_score: int | None = None
+    triplosensitivity: str | None = None
+
+
 # A transcript near an SV.
 @dataclass
 class Transcript:
@@ -40,6 +53,7 @@ class Transcript:
     mane_select: bool
     chrom: str
     strand: str
+    gene_details: GeneDetails | None = None
 
 
 # A part of a transcript near an SV, and whether the SV overlaps it.

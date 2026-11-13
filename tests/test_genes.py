@@ -1,5 +1,5 @@
-from helpers import make_database, read_rows
 from svshare.genes import add_genes
+from svshare.svs import SV, GeneDetails, SVPosition, Transcript, TranscriptPart
 
 HEADER = [
     "ensembl_gene_id", "hgnc_id", "symbol", "name", "summary",
@@ -26,29 +26,37 @@ def write_gene_info(tmp_path):
     return path
 
 
-# Checks that add_genes stores one row per gene in transcripts (GENE1 has two
-# transcripts), and what each row gets:
-#   GENE1  everything in the gene info file, matched even though transcripts
+def make_transcript(transcript_id, gene_name, gene_id):
+    return Transcript(transcript_id, gene_name, gene_id, "protein_coding", True, "chr1", "+")
+
+
+# Checks that add_genes gives each transcript near an SV its gene's details,
+# shared by transcripts of the same gene (GENE1 has two), and what each gets:
+#   GENE1  everything in the gene info file, matched even though the transcript
 #          gives its ID with a version (ENSG01.5); its "Not yet evaluated"
-#          triplosensitivity score is stored as no score
+#          triplosensitivity score is kept as no score
 #   GENE2  its name only, since the file has no summary or scores for it
 #   GENE3  only its ID, since it isn't in the file
-def test_add_genes_stores_info_for_each_gene_near_an_sv(tmp_path):
-    db_path = make_database(tmp_path, transcripts=[
-        dict(transcript_id="T1", gene_name="GENE1", gene_id="ENSG01.5",
-             transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
-        dict(transcript_id="T1b", gene_name="GENE1", gene_id="ENSG01.5",
-             transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
-        dict(transcript_id="T2", gene_name="GENE2", gene_id="ENSG02.1",
-             transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
-        dict(transcript_id="T3", gene_name="GENE3", gene_id="ENSG03.2",
-             transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
-    ])
-
-    assert add_genes(db_path, write_gene_info(tmp_path)) == (1, 1, 3)
-    assert read_rows(db_path, "genes") == [
-        ("ENSG01.5", "HGNC:1", "gene one", "Gene one does things.",
-         3, "Sufficient evidence for dosage pathogenicity", None, "Not yet evaluated"),
-        ("ENSG02.1", "HGNC:2", "gene two", None, None, None, None, None),
-        ("ENSG03.2", None, None, None, None, None, None, None),
+def test_add_genes_sets_details_for_each_gene_near_an_sv(tmp_path):
+    t1 = make_transcript("T1", "GENE1", "ENSG01.5")
+    t1b = make_transcript("T1b", "GENE1", "ENSG01.5")
+    t2 = make_transcript("T2", "GENE2", "ENSG02.1")
+    t3 = make_transcript("T3", "GENE3", "ENSG03.2")
+    position = SVPosition("chr1", 1000, 2000, 2000, "DEL", -1000)
+    svs = [
+        SV(1, position, [], transcript_parts=[
+            TranscriptPart(t1, "CDS", 1, 1000, 1100, True),
+            TranscriptPart(t1b, "CDS", 1, 1000, 1100, True),
+            TranscriptPart(t2, "intron", 1, 1500, 1600, True),
+        ]),
+        SV(2, position, [], transcript_parts=[TranscriptPart(t3, "CDS", 1, 1000, 1100, True)]),
     ]
+
+    assert add_genes(svs, write_gene_info(tmp_path)) == (1, 1, 3)
+    assert t1.gene_details == GeneDetails(
+        "ENSG01.5", "HGNC:1", "gene one", "Gene one does things.",
+        3, "Sufficient evidence for dosage pathogenicity", None, "Not yet evaluated",
+    )
+    assert t1b.gene_details is t1.gene_details
+    assert t2.gene_details == GeneDetails("ENSG02.1", "HGNC:2", "gene two")
+    assert t3.gene_details == GeneDetails("ENSG03.2")
