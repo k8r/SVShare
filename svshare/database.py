@@ -267,98 +267,87 @@ def select_sv_ids(db_path, sv_filter):
         )]
 
 
-# Write the SVs and their calls to a new database at db_path, replacing any
-# earlier one.
-def write_database(db_path, svs):
+# Write the SVs, everything found about them, and the outside tool runs to a
+# new database at db_path, replacing any earlier one.
+def write_database(db_path, svs, tool_runs):
     db_path = Path(db_path)
     db_path.unlink(missing_ok=True)
     with connect(db_path) as db:
         db.executescript(SCHEMA)
-        for sv in svs:
-            position = sv.position
-            starts = [call.pos for call in sv.calls]
-            lengths = [abs(call.svlen) for call in sv.calls if call.svlen is not None]
-            db.execute(
-                "INSERT INTO svs (sv_id, chrom, pos, vcf_end, reference_end, svtype, svlen,"
-                " start_spread, length_spread) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (sv.sv_id, position.chrom, position.pos, position.vcf_end,
-                 position.reference_end, position.svtype, position.svlen,
-                 max(starts) - min(starts), max(lengths) - min(lengths) if lengths else None),
-            )
-            db.executemany(
-                "INSERT INTO calls (sv_id, sample, caller, vcf_id, chrom, pos, vcf_end,"
-                " svtype, svlen, genotype, read_support)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [(sv.sv_id, call.sample, call.caller, call.vcf_id, call.chrom, call.pos,
-                  call.vcf_end, call.svtype, call.svlen, call.genotype, call.read_support)
-                 for call in sv.calls],
-            )
+        _insert_svs(db, svs)
+        _insert_transcripts(db, svs)
+        _insert_genes(db, svs)
+        _insert_tool_runs(db, tool_runs)
     return db_path
 
 
-# Save the details of each gene near the SVs, once each.
-def save_genes(db_path, svs):
-    genes = {part.transcript.gene_details.gene_id: part.transcript.gene_details
-             for sv in svs for part in sv.transcript_parts if part.transcript.gene_details}
-    with connect(db_path) as db:
+# Insert each SV, with how far apart its calls' starts and lengths are, and its
+# calls.
+def _insert_svs(db, svs):
+    for sv in svs:
+        position = sv.position
+        starts = [call.pos for call in sv.calls]
+        lengths = [abs(call.svlen) for call in sv.calls if call.svlen is not None]
+        db.execute(
+            "INSERT INTO svs (sv_id, chrom, pos, vcf_end, reference_end, svtype, svlen,"
+            " start_spread, length_spread, gnomad_id, gnomad_af, colorsdb_id, colorsdb_af,"
+            " near_reference_gap) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (sv.sv_id, position.chrom, position.pos, position.vcf_end,
+             position.reference_end, position.svtype, position.svlen,
+             max(starts) - min(starts), max(lengths) - min(lengths) if lengths else None,
+             sv.gnomad_id, sv.gnomad_af, sv.colorsdb_id, sv.colorsdb_af,
+             sv.near_reference_gap),
+        )
         db.executemany(
-            "INSERT INTO genes (gene_id, hgnc_id, full_name, summary,"
-            " haploinsufficiency_score, haploinsufficiency, triplosensitivity_score,"
-            " triplosensitivity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [(gene.gene_id, gene.hgnc_id, gene.full_name, gene.summary,
-              gene.haploinsufficiency_score, gene.haploinsufficiency,
-              gene.triplosensitivity_score, gene.triplosensitivity)
-             for _, gene in sorted(genes.items())],
+            "INSERT INTO calls (sv_id, sample, caller, vcf_id, chrom, pos, vcf_end,"
+            " svtype, svlen, genotype, read_support)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(sv.sv_id, call.sample, call.caller, call.vcf_id, call.chrom, call.pos,
+              call.vcf_end, call.svtype, call.svlen, call.genotype, call.read_support)
+             for call in sv.calls],
         )
 
 
-# Save the transcripts near each SV, once each, and the parts of them near it.
-def save_transcripts(db_path, svs):
+# Insert the transcripts near the SVs, once each, and the parts of them near
+# each SV.
+def _insert_transcripts(db, svs):
     transcripts = {part.transcript.transcript_id: part.transcript
                    for sv in svs for part in sv.transcript_parts}
-    with connect(db_path) as db:
-        db.executemany(
-            "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
-            " mane_select, chrom, strand) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [(transcript.transcript_id, transcript.gene_name, transcript.gene_id,
-              transcript.transcript_type, transcript.mane_select, transcript.chrom,
-              transcript.strand)
-             for _, transcript in sorted(transcripts.items())],
-        )
-        db.executemany(
-            "INSERT INTO sv_transcript_parts (sv_id, transcript_id, region, number, pos,"
-            " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [(sv.sv_id, part.transcript.transcript_id, part.region, part.number, part.pos,
-              part.end, part.overlaps_sv)
-             for sv in svs for part in sv.transcript_parts],
-        )
+    db.executemany(
+        "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
+        " mane_select, chrom, strand) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [(transcript.transcript_id, transcript.gene_name, transcript.gene_id,
+          transcript.transcript_type, transcript.mane_select, transcript.chrom,
+          transcript.strand)
+         for _, transcript in sorted(transcripts.items())],
+    )
+    db.executemany(
+        "INSERT INTO sv_transcript_parts (sv_id, transcript_id, region, number, pos,"
+        " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [(sv.sv_id, part.transcript.transcript_id, part.region, part.number, part.pos,
+          part.end, part.overlaps_sv)
+         for sv in svs for part in sv.transcript_parts],
+    )
 
 
-# Save the ID and allele frequency of the gnomAD and CoLoRSdb records each SV
-# matched.
-def save_population_matches(db_path, svs):
-    with connect(db_path) as db:
-        db.executemany(
-            "UPDATE svs SET gnomad_id = ?, gnomad_af = ?, colorsdb_id = ?, colorsdb_af = ?"
-            " WHERE sv_id = ?",
-            [(sv.gnomad_id, sv.gnomad_af, sv.colorsdb_id, sv.colorsdb_af, sv.sv_id)
-             for sv in svs],
-        )
+# Insert the details of each gene near the SVs, once each.
+def _insert_genes(db, svs):
+    genes = {part.transcript.gene_details.gene_id: part.transcript.gene_details
+             for sv in svs for part in sv.transcript_parts if part.transcript.gene_details}
+    db.executemany(
+        "INSERT INTO genes (gene_id, hgnc_id, full_name, summary,"
+        " haploinsufficiency_score, haploinsufficiency, triplosensitivity_score,"
+        " triplosensitivity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [(gene.gene_id, gene.hgnc_id, gene.full_name, gene.summary,
+          gene.haploinsufficiency_score, gene.haploinsufficiency,
+          gene.triplosensitivity_score, gene.triplosensitivity)
+         for _, gene in sorted(genes.items())],
+    )
 
 
-# Save how close each SV is to a gap in the reference.
-def save_reference_gaps(db_path, svs):
-    with connect(db_path) as db:
-        db.executemany(
-            "UPDATE svs SET near_reference_gap = ? WHERE sv_id = ?",
-            [(sv.near_reference_gap, sv.sv_id) for sv in svs if sv.near_reference_gap],
-        )
-
-
-# Add each outside tool run to the database, in the order they ran.
-def save_tool_runs(db_path, tool_runs):
-    with connect(db_path) as db:
-        db.executemany(
-            "INSERT INTO commands (sample, tool, command) VALUES (?, ?, ?)",
-            [(tool_run.sample, tool_run.tool, str(tool_run)) for tool_run in tool_runs],
-        )
+# Insert each outside tool run, in the order they ran.
+def _insert_tool_runs(db, tool_runs):
+    db.executemany(
+        "INSERT INTO commands (sample, tool, command) VALUES (?, ?, ?)",
+        [(tool_run.sample, tool_run.tool, str(tool_run)) for tool_run in tool_runs],
+    )

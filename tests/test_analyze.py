@@ -4,12 +4,13 @@ from types import SimpleNamespace
 import pysam
 import pytest
 
-from helpers import make_database, read_rows
+from helpers import read_rows
 from svshare import analyze
 from svshare.commands import ToolRun
-from svshare.database import save_tool_runs, write_database
+from svshare.database import write_database
 from svshare.merging import VCFPreppedForMerging
 from svshare.reference import check_bam_reference_compatibility, ensure_reference_index
+from svshare.svs import SV, Call, GeneDetails, SVPosition, Transcript, TranscriptPart
 from svshare.vcf_reader import read_merged_svs
 
 TEST_BAM = Path(__file__).parent.parent / "DevData" / "HG002.test.bam"
@@ -156,7 +157,7 @@ def write_merge_vcfs(tmp_path):
 def test_write_database_has_one_sv_per_jasmine_record(tmp_path):
     merged_vcf, prepped_vcfs = write_merge_vcfs(tmp_path)
     svs = read_merged_svs(merged_vcf, prepped_vcfs)
-    db_path = write_database(tmp_path / "svshare.db", svs)
+    db_path = write_database(tmp_path / "svshare.db", svs, [])
 
     columns = ("sv_id", "chrom", "pos", "vcf_end", "reference_end", "svtype", "svlen",
                "start_spread", "length_spread")
@@ -171,7 +172,7 @@ def test_write_database_has_one_sv_per_jasmine_record(tmp_path):
 def test_write_database_keeps_one_row_per_call(tmp_path):
     merged_vcf, prepped_vcfs = write_merge_vcfs(tmp_path)
     svs = read_merged_svs(merged_vcf, prepped_vcfs)
-    db_path = write_database(tmp_path / "svshare.db", svs)
+    db_path = write_database(tmp_path / "svshare.db", svs, [])
 
     columns = ("sv_id", "sample", "caller", "vcf_id", "pos", "svlen", "genotype", "read_support")
     assert read_rows(db_path, "calls", *columns) == [
@@ -181,9 +182,45 @@ def test_write_database_keeps_one_row_per_call(tmp_path):
     ]
 
 
-def test_save_tool_runs(tmp_path):
-    db_path = make_database(tmp_path)
-    save_tool_runs(db_path, [
+# Checks that what the analyze steps find about an SV is saved: its gap and
+# population matches in its row, and its transcript parts, their transcripts,
+# and their genes' details once each, though two parts share a transcript.
+def test_write_database_saves_what_was_found_about_each_sv(tmp_path):
+    gene = GeneDetails("GENE1_ID", "HGNC:1", "gene one", "Does things.", 3, "Sufficient")
+    transcript = Transcript("T1", "GENE1", "GENE1_ID", "protein_coding", True, "chr1", "+",
+                            gene)
+    sv = SV(
+        1, SVPosition("chr1", 1000, 1150, 1150, "DEL", -150),
+        [Call("HG002", "sniffles2", "0/1", 22, "a", "chr1", 1000, 1150, "DEL", -150)],
+        gnomad_id="g1", gnomad_af=0.25, colorsdb_id="c1", colorsdb_af=0.5,
+        near_reference_gap="350 bp from 20 unknown bases",
+        transcript_parts=[
+            TranscriptPart(transcript, "CDS", 1, 900, 1100, True),
+            TranscriptPart(transcript, "intron", 1, 1101, 2000, True),
+        ],
+    )
+
+    db_path = write_database(tmp_path / "svshare.db", [sv], [])
+
+    columns = ("sv_id", "gnomad_id", "gnomad_af", "colorsdb_id", "colorsdb_af",
+               "near_reference_gap")
+    assert read_rows(db_path, "svs", *columns) == [
+        (1, "g1", 0.25, "c1", 0.5, "350 bp from 20 unknown bases"),
+    ]
+    assert read_rows(db_path, "transcripts") == [
+        ("T1", "GENE1", "GENE1_ID", "protein_coding", 1, "chr1", "+"),
+    ]
+    assert read_rows(db_path, "sv_transcript_parts") == [
+        (1, "T1", "CDS", 1, 900, 1100, 1),
+        (1, "T1", "intron", 1, 1101, 2000, 1),
+    ]
+    assert read_rows(db_path, "genes") == [
+        ("GENE1_ID", "HGNC:1", "gene one", "Does things.", 3, "Sufficient", None, None),
+    ]
+
+
+def test_write_database_saves_tool_runs(tmp_path):
+    db_path = write_database(tmp_path / "svshare.db", [], [
         ToolRun("HG002", "mosdepth", ["mosdepth", "out prefix"]),
         ToolRun(None, "bedtools", ["bedtools", "intersect"], Path("overlaps.bed")),
     ])

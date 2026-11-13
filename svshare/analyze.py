@@ -3,10 +3,7 @@ import sys
 from pathlib import Path
 
 from .callers import CALLERS, caller_vcf_path, cutesv_min_support
-from .database import (
-    save_genes, save_population_matches, save_reference_gaps, save_tool_runs,
-    save_transcripts, write_database,
-)
+from .database import write_database
 from .gaps import add_reference_gaps
 from .genes import add_genes
 from .transcripts import count_affected_svs, find_sv_transcripts
@@ -30,15 +27,14 @@ def run(args):
     tool_runs, prepped_vcfs = _call_svs(args, platforms)
     tool_runs.append(_merge_calls(args, prepped_vcfs))
     svs = read_merged_svs(args.output / MERGED_VCF, prepped_vcfs)
-    db_path = write_database(args.output / DATABASE, svs)
 
-    _find_reference_gaps(db_path, svs, args.reference)
-    _look_up_population_frequencies(db_path, svs, args)
-    gene_run = _find_genes(db_path, svs, args)
+    _find_reference_gaps(svs, args.reference)
+    _look_up_population_frequencies(svs, args)
+    gene_run = _find_genes(svs, args)
     if gene_run:
         tool_runs.append(gene_run)
 
-    save_tool_runs(db_path, tool_runs)
+    write_database(args.output / DATABASE, svs, tool_runs)
     print_summary(args, tool_runs)
 
 
@@ -129,14 +125,13 @@ def _merge_calls(args, prepped_vcfs):
     return tool_run
 
 
-def _find_reference_gaps(db_path, svs, reference):
+def _find_reference_gaps(svs, reference):
     print("\nFinding SVs near gaps in the reference")
     near = add_reference_gaps(svs, reference)
-    save_reference_gaps(db_path, svs)
     print(f"  {near} of {len(svs)} SVs are at or near a gap")
 
 
-def _look_up_population_frequencies(db_path, svs, args):
+def _look_up_population_frequencies(svs, args):
     population_vcfs = {"gnomad": args.gnomad, "colorsdb": args.colorsdb}
     for dataset, vcf in population_vcfs.items():
         name = DATASETS[dataset]
@@ -146,12 +141,11 @@ def _look_up_population_frequencies(db_path, svs, args):
             print(f"  {matched} of {len(svs)} SVs found in {name}")
         else:
             print(f"\nNo --{dataset} file given, so SVs weren't looked up in {name}")
-    save_population_matches(db_path, svs)
 
 
 # Find the genes each SV overlaps, if --gencode was given. Returns the tool run,
 # or None.
-def _find_genes(db_path, svs, args):
+def _find_genes(svs, args):
     if not args.gencode:
         print("\nNo --gencode file given, so SVs weren't matched to genes")
         return None
@@ -159,10 +153,8 @@ def _find_genes(db_path, svs, args):
     if args.regions_bed and args.regions_bed.exists():
         print(f"  using existing transcript regions: {args.regions_bed}")
     gene_run = find_sv_transcripts(svs, args.gencode, args.output, args.regions_bed)
-    save_transcripts(db_path, svs)
     print(f"  {count_affected_svs(svs)} of {len(svs)} SVs overlap a gene")
     with_summary, with_dosage, genes = add_genes(svs)
-    save_genes(db_path, svs)
     print(f"  {genes} genes nearby: {with_summary} with a summary, "
           f"{with_dosage} with ClinGen dosage scores")
     return gene_run
