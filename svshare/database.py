@@ -173,22 +173,20 @@ def sv_calls(db_path, sv_ids):
         ).fetchall()
 
 
-# Return each kind of transcript part the SVs in sv_ids overlap, once per gene.
-def overlapped_gene_regions(db_path, sv_ids):
+# Return each transcript part near the SVs in sv_ids, with its transcript and its
+# gene's details, by SV and then transcript and position.
+def sv_transcript_parts(db_path, sv_ids):
     with connect(db_path) as db:
         return db.execute(
-            "SELECT DISTINCT sv_id, gene_name, gene_id, region FROM sv_transcript_parts"
-            f" JOIN transcripts USING (transcript_id) WHERE overlaps_sv = 1 AND {SV_ID_IN}",
+            "SELECT sv_id, region, number, pos, end_pos, overlaps_sv, transcript_id,"
+            " gene_name, gene_id, transcript_type, mane_select, chrom, strand, hgnc_id,"
+            " full_name, summary, haploinsufficiency_score, haploinsufficiency,"
+            " triplosensitivity_score, triplosensitivity"
+            " FROM sv_transcript_parts JOIN transcripts USING (transcript_id)"
+            f" LEFT JOIN genes USING (gene_id) WHERE {SV_ID_IN}"
+            " ORDER BY sv_id, transcript_id, pos",
             [json.dumps(list(sv_ids))],
         ).fetchall()
-
-
-# Return each saved gene's full name and dosage sensitivity, by gene ID.
-def gene_details(db_path):
-    with connect(db_path) as db:
-        return {row["gene_id"]: dict(row) for row in db.execute(
-            "SELECT gene_id, full_name, haploinsufficiency, triplosensitivity FROM genes"
-        )}
 
 
 def _sample_support_condition(callers, min_samples):

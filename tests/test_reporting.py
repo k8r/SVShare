@@ -4,7 +4,7 @@ from svshare.database import SVFilter, select_sv_ids
 from svshare.population import DATASETS
 from svshare.reporting import (_chrom_order, find_unknown_genes, load_svs, make_sv_filter,
                               parse_gene_list)
-from svshare.svs import SV, Call, Gene, SVPosition
+from svshare.svs import SV, Call, GeneDetails, SVPosition, Transcript, TranscriptPart
 
 
 def test_genes_only():
@@ -273,22 +273,34 @@ def test_svs_are_in_genome_order_and_only_the_given_ones(tmp_path):
     assert [sv.sv_id for sv in load_svs(db_path, [1, 2])] == [2, 1]
 
 
-# Only genes the SV overlaps are included, with the parts it overlaps across
-# their transcripts.
+# Each SV gets every transcript part near it, whether it overlaps it or not,
+# with its transcript and its gene's details.
 def test_load_svs(tmp_path):
     svs = load_svs(write_load_test_database(tmp_path), [1, 2, 3])
+
+    gene1 = GeneDetails("G1", full_name="gene one", haploinsufficiency="Sufficient evidence")
+    t1 = Transcript("T1", "GENE1", "G1", "protein_coding", True, "chr2", "+", gene1)
+    t1b = Transcript("T1b", "GENE1", "G1", "protein_coding", True, "chr2", "+", gene1)
+    t2 = Transcript("T2", "GENE2", "G2", "protein_coding", True, "chr2", "+",
+                    GeneDetails("G2"))
     assert svs == [
         SV(3, SVPosition("chr2", 100, 9000, 100, "BND", 0),
            [Call("HG003", "sniffles2", "0/1", 5)],
-           [Gene("GENE2", None, None, None, ["promoter"])]),
+           transcript_parts=[TranscriptPart(t1, "promoter", None, 150, 249, False),
+                             TranscriptPart(t2, "promoter", None, 50, 150, True)]),
         SV(2, SVPosition("chr2", 300, 300, 300, "INS", 50),
            [Call("HG002", "cutesv", "0|1", 6), Call("HG002", "sniffles2", "0|1", 6)],
-           [Gene("GENE1", "gene one", "Sufficient evidence", None, ["UTR", "intron"])],
-           colorsdb_af=0.005, near_reference_gap="350 bp from 20 unknown bases"),
+           colorsdb_af=0.005, near_reference_gap="350 bp from 20 unknown bases",
+           transcript_parts=[TranscriptPart(t1, "intron", 1, 250, 400, True),
+                             TranscriptPart(t1b, "UTR", 1, 280, 320, True)]),
         SV(1, SVPosition("chr10", 500, 600, 600, "DEL", -100),
            [Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
             Call("HG003", "cutesv", "./.", None)]),
     ]
+    # Parts of the same transcript, and transcripts of the same gene, share one object.
+    assert svs[0].transcript_parts[0].transcript is svs[1].transcript_parts[0].transcript
+    assert (svs[1].transcript_parts[0].transcript.gene_details
+            is svs[1].transcript_parts[1].transcript.gene_details)
 
 
 def test_chromosomes_sort_by_number_then_x_y_m_then_name():

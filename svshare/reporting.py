@@ -2,16 +2,12 @@
 import sys
 
 from .callers import CALLERS
-from .database import (SVFilter, gene_details, gene_names, overlapped_gene_regions,
-                       select_sv_ids, sv_calls, sv_rows)
+from .database import (SVFilter, gene_names, select_sv_ids, sv_calls, sv_rows,
+                       sv_transcript_parts)
 from .genes import GENE_INFO, read_gene_symbols
 from .population import DATASETS
-from .svs import SV, Call, Gene, SVPosition
+from .svs import SV, Call, GeneDetails, SVPosition, Transcript, TranscriptPart
 from .tsv import write_tsv
-
-# The order a gene's parts are listed in, roughly from upstream to downstream.
-REGION_ORDER = ["promoter", "UTR", "start_codon", "CDS", "stop_codon", "noncoding_exon", "intron"]
-
 
 # Combine --genes values and --gene-file lines into a sorted, deduplicated list.
 def parse_gene_list(genes, gene_file):
@@ -64,36 +60,52 @@ def _chrom_order(chrom):
 
 # Return the SVs in sv_ids, in genome order.
 def load_svs(db_path, sv_ids):
-    calls, regions = {}, {}
+    calls = {}
     for row in sv_calls(db_path, sv_ids):
         calls.setdefault(row["sv_id"], []).append(
             Call(row["sample"], row["caller"], row["genotype"], row["read_support"])
         )
-    for row in overlapped_gene_regions(db_path, sv_ids):
-        gene = (row["gene_name"], row["gene_id"])
-        regions.setdefault(row["sv_id"], {}).setdefault(gene, set()).add(row["region"])
-    gene_info = gene_details(db_path)
+    parts = _load_transcript_parts(db_path, sv_ids)
 
     svs = []
     for row in sv_rows(db_path, sv_ids):
-        genes = []
-        for (name, gene_id), gene_regions in sorted(regions.get(row["sv_id"], {}).items()):
-            info = gene_info.get(gene_id, {})
-            genes.append(Gene(
-                name, info.get("full_name"), info.get("haploinsufficiency"),
-                info.get("triplosensitivity"), sorted(gene_regions, key=REGION_ORDER.index),
-            ))
         position = SVPosition(
             chrom=row["chrom"], pos=row["pos"], vcf_end=row["vcf_end"],
             reference_end=row["reference_end"], svtype=row["svtype"], svlen=row["svlen"],
         )
         svs.append(SV(
-            row["sv_id"], position, calls.get(row["sv_id"], []), genes,
+            row["sv_id"], position, calls.get(row["sv_id"], []),
             gnomad_af=row["gnomad_af"], colorsdb_af=row["colorsdb_af"],
             near_reference_gap=row["near_reference_gap"],
+            transcript_parts=parts.get(row["sv_id"], []),
         ))
     svs.sort(key=lambda sv: (_chrom_order(sv.position.chrom), sv.position.pos, sv.sv_id))
     return svs
+
+
+# Return the transcript parts near each SV in sv_ids, by SV ID. Parts of the same
+# transcript share one Transcript, and transcripts of the same gene share one
+# GeneDetails.
+def _load_transcript_parts(db_path, sv_ids):
+    genes, transcripts, parts = {}, {}, {}
+    for row in sv_transcript_parts(db_path, sv_ids):
+        gene_id, transcript_id = row["gene_id"], row["transcript_id"]
+        if gene_id not in genes:
+            genes[gene_id] = GeneDetails(
+                gene_id, row["hgnc_id"], row["full_name"], row["summary"],
+                row["haploinsufficiency_score"], row["haploinsufficiency"],
+                row["triplosensitivity_score"], row["triplosensitivity"],
+            )
+        if transcript_id not in transcripts:
+            transcripts[transcript_id] = Transcript(
+                transcript_id, row["gene_name"], gene_id, row["transcript_type"],
+                bool(row["mane_select"]), row["chrom"], row["strand"], genes[gene_id],
+            )
+        parts.setdefault(row["sv_id"], []).append(TranscriptPart(
+            transcripts[transcript_id], row["region"], row["number"], row["pos"],
+            row["end_pos"], bool(row["overlaps_sv"]),
+        ))
+    return parts
 
 
 # Ask a yes/no question, defaulting to no.

@@ -1,4 +1,4 @@
-# What an SV is: where it is, the calls of it, and the genes and transcripts near it.
+# What an SV is: where it is, the calls of it, and the transcripts and genes near it.
 from dataclasses import dataclass, field
 
 # SV types that sit at one position, whatever end their caller gave.
@@ -18,16 +18,6 @@ class Call:
     vcf_end: int | None = None
     svtype: str | None = None
     svlen: int | None = None
-
-
-# A gene an SV overlaps, with the parts of it the SV overlaps in any transcript.
-@dataclass
-class Gene:
-    name: str
-    full_name: str | None
-    haploinsufficiency: str | None
-    triplosensitivity: str | None
-    regions: list[str]
 
 
 # What the gene info file says about a gene near an SV.
@@ -83,7 +73,6 @@ class SV:
     sv_id: int
     position: SVPosition
     calls: list[Call]
-    genes: list[Gene] = field(default_factory=list)
     transcript_parts: list[TranscriptPart] = field(default_factory=list)
     gnomad_id: str | None = None
     gnomad_af: float | None = None
