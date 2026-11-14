@@ -6,7 +6,7 @@ from .callers import CALLERS
 COLUMNS = [
     "genome_order", "chrom", "pos", "end", "svtype", "svlen", "samples",
     "read_support", "weakest_sample_support", "near_reference_gap", "callers",
-    "gnomad_af", "colorsdb_af", "genes", "gene_names", "haploinsufficiency",
+    "gnomad_af", "colorsdb_af", "genes", "gene_full_names", "haploinsufficiency",
     "triplosensitivity",
 ]
 
@@ -100,7 +100,7 @@ def _row(sv):
         "colorsdb_af": sv.colorsdb_af,
         "genes": ", ".join(f"{name} ({', '.join(regions)})" for name, _, regions in genes)
                  or None,
-        "gene_names": _per_gene(genes, "full_name"),
+        "gene_full_names": _per_gene(genes, "full_name"),
         "haploinsufficiency": _per_gene(genes, "haploinsufficiency"),
         "triplosensitivity": _per_gene(genes, "triplosensitivity"),
     }

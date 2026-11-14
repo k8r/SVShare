@@ -56,7 +56,7 @@ def test_genes_list_overlapped_parts_and_gene_info():
         TranscriptPart(T1, "CDS", 2, 401, 600, False),
     ]))
     assert row["genes"] == "GENE1 (UTR, intron), GENE2 (promoter)"
-    assert row["gene_names"] == "GENE1: gene one"
+    assert row["gene_full_names"] == "GENE1: gene one"
     assert row["haploinsufficiency"] == "GENE1: Sufficient evidence"
     assert row["triplosensitivity"] is None
 
@@ -74,7 +74,7 @@ def test_unknown_regions_are_listed_last():
 def test_no_genes():
     row = _row(make_sv())
     assert row["genes"] is None
-    assert row["gene_names"] is None
+    assert row["gene_full_names"] is None
 
 
 def test_write_tsv(tmp_path):
