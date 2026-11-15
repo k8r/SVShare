@@ -11,7 +11,7 @@ from .merging import VCFPreppedForMerging, drop_0_0_calls, run_jasmine
 from .population import DATASETS, add_population_frequencies
 from .reference import check_bam_reference_compatibility, ensure_reference_index
 from .sequencing import detect_platform, mean_depth
-from .vcf_reader import read_merged_svs
+from .vcf_reader import read_calls, read_merged_svs
 
 # Jasmine's merge of every VCF from every sample across callers.
 MERGED_VCF = "all_calls.merged.vcf"
@@ -25,9 +25,12 @@ def run(args):
 
     args.output.mkdir(parents=True, exist_ok=True)
     tool_runs, prepped_vcfs = _call_svs(args, platforms)
+    calls_by_input = []
+    for prepped_vcf in prepped_vcfs:
+        calls_by_input.append(read_calls(prepped_vcf.vcf, prepped_vcf.sample, prepped_vcf.caller))
     merged_vcf, tool_run = _merge_calls(args, prepped_vcfs)
     tool_runs.append(tool_run)
-    svs = read_merged_svs(merged_vcf, prepped_vcfs)
+    svs = read_merged_svs(merged_vcf, calls_by_input)
 
     _find_reference_gaps(svs, args.reference)
     _look_up_population_frequencies(svs, args)

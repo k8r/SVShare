@@ -39,30 +39,32 @@ def read_jasmine_groups(merged_vcf):
                int_or_none(info.get("SVLEN")), members)
 
 
-# Return the SVs in Jasmine's merged VCF, in order, each with the calls merged
-# into it. prepped_vcfs lists the VCFs prepped for merging, in the order Jasmine
-# was given them.
-def read_merged_svs(merged_vcf, prepped_vcfs):
-    calls_by_input = [
-        {call_id: (chrom, pos, info, fmt)
-         for call_id, chrom, pos, info, fmt in read_vcf_records(prepped_vcf.vcf)}
-        for prepped_vcf in prepped_vcfs
-    ]
+# Return the calls in the given VCF, from the given sample and caller, by their
+# VCF ID.
+def read_calls(vcf, sample, caller):
+    calls = {}
+    for vcf_id, chrom, pos, info, fmt in read_vcf_records(vcf):
+        calls[vcf_id] = Call(
+            sample=sample, caller=caller, genotype=fmt.get("GT"),
+            # Both sniffles2 and cuteSV report variant-supporting reads as DV.
+            read_support=int_or_none(fmt.get("DV")), vcf_id=vcf_id, chrom=chrom, pos=pos,
+            vcf_end=int_or_none(info.get("END")), svtype=info.get("SVTYPE"),
+            svlen=int_or_none(info.get("SVLEN")),
+        )
+    return calls
+
+
+# Return the SVs in the given Jasmine merged_vcf, each with its calls. The given
+# calls_by_input is a list of dicts of calls by ID, one per input VCF in
+# Jasmine's order.
+def read_merged_svs(merged_vcf, calls_by_input):
     svs = []
     for sv_id, (chrom, pos, vcf_end, svtype, svlen, members) in enumerate(
         read_jasmine_groups(merged_vcf), start=1
     ):
         calls = []
         for index, vcf_id in members:
-            prepped_vcf = prepped_vcfs[index]
-            call_chrom, call_pos, info, fmt = calls_by_input[index][vcf_id]
-            calls.append(Call(
-                sample=prepped_vcf.sample, caller=prepped_vcf.caller, genotype=fmt.get("GT"),
-                # Both sniffles2 and cuteSV report variant-supporting reads as DV.
-                read_support=int_or_none(fmt.get("DV")), vcf_id=vcf_id, chrom=call_chrom,
-                pos=call_pos, vcf_end=int_or_none(info.get("END")), svtype=info.get("SVTYPE"),
-                svlen=int_or_none(info.get("SVLEN")),
-            ))
+            calls.append(calls_by_input[index][vcf_id])
         position = SVPosition(
             chrom=chrom, pos=pos, vcf_end=vcf_end,
             reference_end=reference_end(svtype, pos, vcf_end), svtype=svtype, svlen=svlen,

@@ -11,7 +11,7 @@ from svshare.database import write_database
 from svshare.merging import VCFPreppedForMerging
 from svshare.reference import check_bam_reference_compatibility, ensure_reference_index
 from svshare.svs import SV, Call, GeneDetails, SVPosition, Transcript, TranscriptPart
-from svshare.vcf_reader import read_merged_svs
+from svshare.vcf_reader import read_calls, read_merged_svs
 
 TEST_BAM = Path(__file__).parent.parent / "DevData" / "HG002.test.bam"
 TEST_REFERENCE = Path(__file__).parent / "fixtures" / "test_reference.fasta"
@@ -151,12 +151,34 @@ def write_merge_vcfs(tmp_path):
     return merged, prepped_vcfs
 
 
+# Read the calls in each of the given prepped VCFs, as analyze does.
+def read_all_calls(prepped_vcfs):
+    calls_by_input = []
+    for prepped_vcf in prepped_vcfs:
+        calls_by_input.append(read_calls(prepped_vcf.vcf, prepped_vcf.sample, prepped_vcf.caller))
+    return calls_by_input
+
+
+# Checks that each call in a VCF is read with its sample and caller,
+# keyed by its VCF ID.
+def test_read_calls_reads_each_call_by_id(tmp_path):
+    _merged_vcf, prepped_vcfs = write_merge_vcfs(tmp_path)
+
+    cutesv = prepped_vcfs[1]
+    assert read_calls(cutesv.vcf, cutesv.sample, cutesv.caller) == {
+        "cuteSV.DEL.0": Call("HG003", "cutesv", "./.", 18, "cuteSV.DEL.0", "chr1", 1010, 1150,
+                             "DEL", -140),
+        "cuteSV.INS.0": Call("HG003", "cutesv", "0/1", 9, "cuteSV.INS.0", "chr2", 5000, 5001,
+                             "INS", 300),
+    }
+
+
 # Checks that each Jasmine record becomes one SV, with the kept call's VCF END
 # and length, where it ends on the reference, and how far apart its calls'
 # starts and lengths are.
 def test_write_database_has_one_sv_per_jasmine_record(tmp_path):
     merged_vcf, prepped_vcfs = write_merge_vcfs(tmp_path)
-    svs = read_merged_svs(merged_vcf, prepped_vcfs)
+    svs = read_merged_svs(merged_vcf, read_all_calls(prepped_vcfs))
     db_path = write_database(tmp_path / "svshare.db", svs, [])
 
     columns = ("sv_id", "chrom", "pos", "vcf_end", "reference_end", "svtype", "svlen",
@@ -171,7 +193,7 @@ def test_write_database_has_one_sv_per_jasmine_record(tmp_path):
 # caller of the input it came from and linked to the SV it was merged into.
 def test_write_database_keeps_one_row_per_call(tmp_path):
     merged_vcf, prepped_vcfs = write_merge_vcfs(tmp_path)
-    svs = read_merged_svs(merged_vcf, prepped_vcfs)
+    svs = read_merged_svs(merged_vcf, read_all_calls(prepped_vcfs))
     db_path = write_database(tmp_path / "svshare.db", svs, [])
 
     columns = ("sv_id", "sample", "caller", "vcf_id", "pos", "svlen", "genotype", "read_support")
