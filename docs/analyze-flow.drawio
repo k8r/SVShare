@@ -1,0 +1,160 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="analyze-flow" name="analyze">
+    <mxGraphModel dx="3112" dy="1750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1750" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bams" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="BAM files, one per sample" vertex="1">
+          <mxGeometry height="60" width="280" x="740" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="1. Check each BAM matches the reference,&lt;br&gt;and find its platform and read depth&lt;br&gt;(mosdepth)" vertex="1">
+          <mxGeometry height="80" width="320" x="720" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="2. Call SVs&lt;br&gt;(Sniffles2, cuteSV)" vertex="1">
+          <mxGeometry height="70" width="280" x="740" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="vcfs" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Caller VCFs, one per sample per caller" vertex="1">
+          <mxGeometry height="60" width="280" x="740" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="3. Drop 0/0 calls&lt;br&gt;(bcftools)" vertex="1">
+          <mxGeometry height="70" width="280" x="740" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="filtered" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Filtered caller VCFs" vertex="1">
+          <mxGeometry height="60" width="280" x="740" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="5. Merge calls&lt;br&gt;(Jasmine)" vertex="1">
+          <mxGeometry height="70" width="280" x="740" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="merged" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Merged VCF" vertex="1">
+          <mxGeometry height="60" width="280" x="740" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="6. Make an SV object for each Jasmine record,&lt;br&gt;holding the Call objects it merged" vertex="1">
+          <mxGeometry height="80" width="320" x="720" y="935" as="geometry" />
+        </mxCell>
+        <mxCell id="mem" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="In-memory list of SV objects" vertex="1">
+          <mxGeometry height="60" width="280" x="740" y="1060" as="geometry" />
+        </mxCell>
+        <mxCell id="s10" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="11. Write the database" vertex="1">
+          <mxGeometry height="70" width="280" x="740" y="1540" as="geometry" />
+        </mxCell>
+        <mxCell id="db" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="SV database (svshare.db)" vertex="1">
+          <mxGeometry height="60" width="280" x="740" y="1660" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="7. Find reference gaps" vertex="1">
+          <mxGeometry height="70" width="260" x="420" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="8. Look up population frequencies" vertex="1">
+          <mxGeometry height="70" width="260" x="420" y="1390" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="9. Find nearby transcript parts&lt;br&gt;(bedtools)" vertex="1">
+          <mxGeometry height="70" width="260" x="1080" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="s9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="10. Add gene details" vertex="1">
+          <mxGeometry height="70" width="260" x="1080" y="1390" as="geometry" />
+        </mxCell>
+        <mxCell id="ref1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Reference FASTA" vertex="1">
+          <mxGeometry height="60" width="240" x="400" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="ref2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Reference FASTA" vertex="1">
+          <mxGeometry height="60" width="240" x="80" y="1185" as="geometry" />
+        </mxCell>
+        <mxCell id="popdata" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Population SV datasets&lt;br&gt;(gnomAD, CoLoRSdb VCFs)" vertex="1">
+          <mxGeometry height="60" width="240" x="80" y="1395" as="geometry" />
+        </mxCell>
+        <mxCell id="gtf" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="GENCODE GTF&lt;br&gt;(or a cached regions BED)" vertex="1">
+          <mxGeometry height="60" width="240" x="1420" y="1185" as="geometry" />
+        </mxCell>
+        <mxCell id="geneinfo" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Gene info&lt;br&gt;(data/gene_info.tsv)" vertex="1">
+          <mxGeometry height="60" width="240" x="1420" y="1395" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="bams" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s1" value="BAMs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="s1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s2" value="BAMs and each sample&#39;s platform">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="s2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="vcfs" value="SV calls">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="vcfs" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s3" value="VCF records">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="s3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="filtered" value="Called SVs only">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="filtered" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s4" value="VCF records">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="s4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="merged" value="Merged calls">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="merged" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s5" value="Each merged SV&#39;s position and its call IDs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="s5" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="mem" value="SV objects">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s10" value="Annotated SV objects and tool runs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="s10" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="db" value="SVs, calls, transcripts, genes, tool runs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s4calls" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="4. Read each VCF&#39;s calls&lt;br&gt;into Call objects" vertex="1">
+          <mxGeometry height="80" width="260" x="1110" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="callsmem" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="In-memory Call objects,&lt;br&gt;by filtered VCF and ID" vertex="1">
+          <mxGeometry height="60" width="280" x="1100" y="945" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="filtered" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s4calls" value="VCF records">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12b" edge="1" parent="1" source="s4calls" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="callsmem" value="Call objects, with genotype&lt;br&gt;and read support">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12c" edge="1" parent="1" source="callsmem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s5" value="Call objects">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0;exitY=0.3;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="s6" value="SV positions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="s6" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.1;entryY=1;entryDx=0;entryDy=0;" target="mem" value="Gap flags">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0.2;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.3;entryDx=0;entryDy=0;" target="s7" value="SV positions,&lt;br&gt;types and lengths">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="s7" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0.3;entryY=1;entryDx=0;entryDy=0;" target="mem" value="Population IDs and AFs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="s8" value="SV positions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.9;entryY=1;entryDx=0;entryDy=0;" target="mem" value="TranscriptPart objects">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s9" value="Gene IDs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" edge="1" parent="1" source="s9" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.7;entryY=1;entryDx=0;entryDy=0;" target="mem" value="GeneDetails objects">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" edge="1" parent="1" source="ref1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" target="s1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="ref2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" target="s6" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" edge="1" parent="1" source="popdata" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" target="s7" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" edge="1" parent="1" source="gtf" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" target="s8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" edge="1" parent="1" source="geneinfo" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" target="s9" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
