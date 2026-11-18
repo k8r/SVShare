@@ -1,16 +1,16 @@
 <mxfile host="app.diagrams.net">
   <diagram id="analyze-flow" name="analyze">
-    <mxGraphModel dx="3112" dy="1750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1750" math="0" shadow="0">
+    <mxGraphModel dx="3112" dy="1750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1750" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="bams" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="BAM files, one per sample" vertex="1">
           <mxGeometry height="60" width="280" x="740" y="20" as="geometry" />
         </mxCell>
-        <mxCell id="s1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="1. Check each BAM matches the reference,&lt;br&gt;and find its platform and read depth&lt;br&gt;(mosdepth)" vertex="1">
+        <mxCell id="s1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="1. Find each sample's platform" vertex="1">
           <mxGeometry height="80" width="320" x="720" y="120" as="geometry" />
         </mxCell>
-        <mxCell id="s2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="2. Call SVs&lt;br&gt;(Sniffles2, cuteSV)" vertex="1">
+        <mxCell id="s2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="2. Measure read depth and call SVs&lt;br&gt;(mosdepth, Sniffles2, cuteSV)" vertex="1">
           <mxGeometry height="70" width="280" x="740" y="250" as="geometry" />
         </mxCell>
         <mxCell id="vcfs" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Caller VCFs, one per sample per caller" vertex="1">
@@ -64,13 +64,13 @@
         <mxCell id="gtf" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="GENCODE GTF&lt;br&gt;(or a cached regions BED)" vertex="1">
           <mxGeometry height="60" width="240" x="1420" y="1185" as="geometry" />
         </mxCell>
-        <mxCell id="geneinfo" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Gene info&lt;br&gt;(data/gene_info.tsv)" vertex="1">
-          <mxGeometry height="60" width="240" x="1420" y="1395" as="geometry" />
+        <mxCell id="geneinfo" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Gene info (svshare/data/gene_info.tsv):&lt;br&gt;names, summaries and dosage scores,&lt;br&gt;from HGNC, NCBI Gene and ClinGen" vertex="1">
+          <mxGeometry height="70" width="280" x="1400.0" y="1390.0" as="geometry" />
         </mxCell>
-        <mxCell id="e1" edge="1" parent="1" source="bams" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s1" value="BAMs">
+        <mxCell id="e1" edge="1" parent="1" source="bams" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s1" value="BAM headers">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e2" edge="1" parent="1" source="s1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s2" value="BAMs and each sample&#39;s platform">
+        <mxCell id="e2" edge="1" parent="1" source="s1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s2" value="Each sample's platform">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e3" edge="1" parent="1" source="s2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="vcfs" value="SV calls">
@@ -88,29 +88,34 @@
         <mxCell id="e7" edge="1" parent="1" source="s4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="merged" value="Merged calls">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e8" edge="1" parent="1" source="merged" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s5" value="Each merged SV&#39;s position and its call IDs">
+        <mxCell id="e8" edge="1" parent="1" source="merged" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s5" value="Each merged SV's position and its call IDs">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e9" edge="1" parent="1" source="s5" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="mem" value="SV objects">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e10" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s10" value="Annotated SV objects and tool runs">
+        <mxCell id="e10" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s10" value="Annotated SV objects">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e11" edge="1" parent="1" source="s10" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="db" value="SVs, calls, transcripts, genes, tool runs">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="s4calls" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="4. Read each VCF&#39;s calls&lt;br&gt;into Call objects" vertex="1">
+        <mxCell id="s4calls" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="4. Read each VCF's calls&lt;br&gt;into Call objects" vertex="1">
           <mxGeometry height="80" width="260" x="1110" y="590" as="geometry" />
         </mxCell>
         <mxCell id="callsmem" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="In-memory Call objects,&lt;br&gt;by filtered VCF and ID" vertex="1">
-          <mxGeometry height="60" width="280" x="1100" y="945" as="geometry" />
+          <mxGeometry height="60" width="280" x="1150" y="945" as="geometry" />
         </mxCell>
         <mxCell id="e12" edge="1" parent="1" source="filtered" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s4calls" value="VCF records">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e12b" edge="1" parent="1" source="s4calls" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="callsmem" value="Call objects, with genotype&lt;br&gt;and read support">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1290" y="710" />
+              <mxPoint x="1290" y="710" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="e12c" edge="1" parent="1" source="callsmem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s5" value="Call objects">
           <mxGeometry relative="1" as="geometry" />
@@ -118,7 +123,7 @@
         <mxCell id="e13" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0;exitY=0.3;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="s6" value="SV positions">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e14" edge="1" parent="1" source="s6" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.1;entryY=1;entryDx=0;entryDy=0;" target="mem" value="Gap flags">
+        <mxCell id="e14" edge="1" parent="1" source="s6" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.1;entryY=1;entryDx=0;entryDy=0;" target="mem" value="Nearby gap descriptions">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e15" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0.2;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.3;entryDx=0;entryDy=0;" target="s7" value="SV positions,&lt;br&gt;types and lengths">
@@ -133,13 +138,13 @@
         <mxCell id="e18" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.9;entryY=1;entryDx=0;entryDy=0;" target="mem" value="TranscriptPart objects">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e19" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s9" value="Gene IDs">
+        <mxCell id="e19" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s9" value="Ensembl gene IDs">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e20" edge="1" parent="1" source="s9" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.7;entryY=1;entryDx=0;entryDy=0;" target="mem" value="GeneDetails objects">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e21" edge="1" parent="1" source="ref1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" target="s1" value="">
+        <mxCell id="e21" edge="1" parent="1" source="ref1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" target="s2" value="Reference sequence">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e22" edge="1" parent="1" source="ref2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" target="s6" value="">
@@ -153,6 +158,66 @@
         </mxCell>
         <mxCell id="e25" edge="1" parent="1" source="geneinfo" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" target="s9" value="">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" edge="1" parent="1" source="bams" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.3;entryDx=0;entryDy=0;" target="s2" value="Reads">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1060" y="50" />
+              <mxPoint x="1060" y="271" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="user" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="User" vertex="1">
+          <mxGeometry height="60" width="220" x="80" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" edge="1" parent="1" source="user" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="s1" value="Platform (optional)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="680" y="50" />
+              <mxPoint x="680" y="160" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e28" edge="1" parent="1" source="user" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" target="s2" value="cuteSV support fraction">
+          <mxGeometry relative="1" x="0.197" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="190" y="310" />
+              <mxPoint x="750" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="toolruns" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="In-memory list of tool runs" vertex="1">
+          <mxGeometry height="60" width="240" x="1420" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" edge="1" parent="1" source="s2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="toolruns" value="Tool runs">
+          <mxGeometry relative="1" x="-0.0654" y="8" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e30" edge="1" parent="1" source="s3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" target="toolruns" value="Tool run">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e31" edge="1" parent="1" source="s4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="toolruns" value="Tool run">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e32" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0.8;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="toolruns" value="Tool run">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1288" y="1130" />
+              <mxPoint x="1700" y="1130" />
+              <mxPoint x="1700" y="280" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e33" edge="1" parent="1" source="toolruns" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="s10" value="Tool runs">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1540" y="230" />
+              <mxPoint x="1740" y="230" />
+              <mxPoint x="1740" y="1575" />
+            </Array>
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
