@@ -46,7 +46,7 @@
         <mxCell id="s7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="8. Look up population frequencies" vertex="1">
           <mxGeometry height="70" width="260" x="420" y="1390" as="geometry" />
         </mxCell>
-        <mxCell id="s8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="9. Find nearby transcript parts&lt;br&gt;(bedtools)" vertex="1">
+        <mxCell id="s8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="9. Find the transcript parts each SV&lt;br&gt;overlaps or is near (bedtools)" vertex="1">
           <mxGeometry height="70" width="260" x="1080" y="1180" as="geometry" />
         </mxCell>
         <mxCell id="s9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="10. Add gene details" vertex="1">
@@ -135,7 +135,7 @@
         <mxCell id="e17" edge="1" parent="1" source="mem" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="s8" value="SV positions">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e18" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.9;entryY=1;entryDx=0;entryDy=0;" target="mem" value="TranscriptPart objects">
+        <mxCell id="e18" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.9;entryY=1;entryDx=0;entryDy=0;" target="mem" value="Overlapped and nearby&lt;br&gt;TranscriptPart objects">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e19" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" target="s9" value="Ensembl gene IDs">

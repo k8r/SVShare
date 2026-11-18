@@ -20,7 +20,7 @@
         </mxCell>
 
         
-        <mxCell id="p1" value="1. Combine the gene symbols" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+        <mxCell id="p1" value="1. Combine the genes" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
           <mxGeometry x="500" y="110" width="280" height="70" as="geometry" />
         </mxCell>
         <mxCell id="p3" value="2. Build the SV filter" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
@@ -37,10 +37,10 @@
         </mxCell>
 
         
-        <mxCell id="f1" value="Gene symbols" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="user" target="p1">
+        <mxCell id="f1" value="Gene symbols or Ensembl IDs" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="user" target="p1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="f2" value="Gene symbols" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="genefile" target="p1">
+        <mxCell id="f2" value="Gene symbols or Ensembl IDs" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="genefile" target="p1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="f7" value="Gene list" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p1" target="p3">

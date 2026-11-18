@@ -15,7 +15,7 @@
         <mxCell id="stop1" value="Stop: it isn't a file" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
           <mxGeometry x="900" y="135" width="240" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="a1" value="Combine the --genes and&lt;br&gt;--gene-file symbols" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+        <mxCell id="a1" value="Combine the --genes and&lt;br&gt;--gene-file genes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
           <mxGeometry x="510" y="250" width="260" height="60" as="geometry" />
         </mxCell>
         <mxCell id="a2" value="Choose the output path&lt;br&gt;(default: next to the database)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
@@ -34,13 +34,13 @@
           <mxGeometry x="510" y="750.0" width="260" height="60" as="geometry" />
         </mxCell>
         <mxCell id="d4" value="Is the format&lt;br&gt;TSV?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="510" y="1050.0" width="260" height="100" as="geometry" />
+          <mxGeometry x="510" y="1150" width="260" height="100" as="geometry" />
         </mxCell>
         <mxCell id="m3" value="Print that HTML reports&lt;br&gt;aren't written yet" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="890" y="1070.0" width="260" height="60" as="geometry" />
+          <mxGeometry x="890" y="1170" width="260" height="60" as="geometry" />
         </mxCell>
         <mxCell id="a5" value="Load those SVs,&lt;br&gt;in genome order" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="510" y="1190.0" width="260" height="60" as="geometry" />
+          <mxGeometry x="510" y="850" width="260" height="60" as="geometry" />
         </mxCell>
         <mxCell id="a6" value="Write the TSV" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
           <mxGeometry x="510" y="1290.0" width="260" height="60" as="geometry" />
@@ -77,16 +77,13 @@
         <mxCell id="c13" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a4" target="m2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="c14" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="m2" target="d5">
+        <mxCell id="c14" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="m2" target="a5">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="c15" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="d4" target="a5">
+        <mxCell id="c15" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="d4" target="a6">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="c16" value="No (HTML)" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="d4" target="m3">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="c17" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a5" target="a6">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="c18" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a6" target="m4">
@@ -98,7 +95,7 @@
         <mxCell id="c20" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="m3" target="end">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-      <mxCell id="d5" value="Any genes with&lt;br&gt;no passing SVs?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="510" y="850" width="260" height="100" as="geometry" /></mxCell><mxCell id="m5" value="List the genes&lt;br&gt;with no passing SVs" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="890" y="870" width="260" height="60" as="geometry" /></mxCell><mxCell id="c21" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="d5" target="m5"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="c22" value="No" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="d5" target="d4"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="c23" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="m5" target="d4"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1020" y="1010" /><mxPoint x="640" y="1010" /></Array></mxGeometry></mxCell></root>
+      <mxCell id="d5" value="Any genes with&lt;br&gt;no passing SVs?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1"><mxGeometry x="510" y="950" width="260" height="100" as="geometry" /></mxCell><mxCell id="m5" value="List the genes&lt;br&gt;with no passing SVs" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="890" y="970" width="260" height="60" as="geometry" /></mxCell><mxCell id="c21" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="d5" target="m5"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="c22" value="No" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="d5" target="d4"><mxGeometry relative="1" as="geometry" /></mxCell><mxCell id="c23" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="m5" target="d4"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1020" y="1110" /><mxPoint x="640" y="1110" /></Array></mxGeometry></mxCell><mxCell id="c24" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;" edge="1" parent="1" source="a5" target="d5"><mxGeometry relative="1" as="geometry" /></mxCell></root>
     </mxGraphModel>
   </diagram>
 </mxfile>
