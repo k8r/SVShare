@@ -185,4 +185,8 @@ def find_sv_transcripts(svs, gtf, out_dir, regions_bed=None):
 
 # Return how many SVs overlap a part of a transcript.
 def count_affected_svs(svs):
-    return sum(any(part.overlaps_sv for part in sv.transcript_parts) for sv in svs)
+    count = 0
+    for sv in svs:
+        if sv.overlapped_parts():
+            count += 1
+    return count

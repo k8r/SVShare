@@ -138,14 +138,6 @@ def connect(db_path):
         db.close()
 
 
-# Return the name of every gene with a saved transcript.
-def gene_names(db_path):
-    with connect(db_path) as db:
-        return {row["gene_name"] for row in db.execute(
-            "SELECT DISTINCT gene_name FROM transcripts"
-        )}
-
-
 # Matches rows whose sv_id is in a JSON list of IDs, given as one parameter, so
 # there's no limit on how many IDs can be passed.
 SV_ID_IN = "sv_id IN (SELECT value FROM json_each(?))"

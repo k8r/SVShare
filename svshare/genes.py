@@ -22,11 +22,6 @@ def read_gene_info(path):
         return {row["ensembl_gene_id"]: row for row in csv.DictReader(lines, delimiter="\t")}
 
 
-# Return the gene symbols in a gene info file.
-def read_gene_symbols(path=GENE_INFO):
-    return {row["symbol"] for row in read_gene_info(path).values()}
-
-
 # Set gene_details on each transcript near the SVs, with whatever the gene info
 # file has for its gene. Transcripts of the same gene share one GeneDetails.
 # Returns (genes with a summary, genes with ClinGen scores, total genes).

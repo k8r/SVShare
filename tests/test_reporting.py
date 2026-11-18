@@ -2,8 +2,7 @@ from helpers import make_database
 from svshare.callers import CALLERS
 from svshare.database import SVFilter, select_sv_ids
 from svshare.population import DATASETS
-from svshare.reporting import (_chrom_order, find_unknown_genes, load_svs, make_sv_filter,
-                              parse_gene_list)
+from svshare.reporting import _chrom_order, load_svs, make_sv_filter, parse_gene_list
 from svshare.svs import SV, Call, GeneDetails, SVPosition, Transcript, TranscriptPart
 
 
@@ -154,30 +153,6 @@ def test_region_keeps_svs_overlapping_it(tmp_path):
     assert select_sv_ids(db_path, SVFilter(region=("chr1", 1, 999))) == []
     assert select_sv_ids(db_path, SVFilter(region=("chr1", 8000, 8000))) == [4]
     assert select_sv_ids(db_path, SVFilter(region=("chr2", 1, 1000))) == [3]
-
-
-def write_test_gene_info(tmp_path):
-    gene_info = tmp_path / "gene_info.tsv"
-    gene_info.write_text(
-        "# test\n"
-        "ensembl_gene_id\thgnc_id\tsymbol\tname\tsummary\thaploinsufficiency_score"
-        "\thaploinsufficiency\ttriplosensitivity_score\ttriplosensitivity\n"
-        "ENSG1\tHGNC:1\tBRCA1\t\t\t\t\t\t\n"
-        "ENSG2\tHGNC:2\tTP53\t\t\t\t\t\t\n"
-    )
-    return gene_info
-
-
-# Symbols from the gene info file and gene names in the database are both
-# known, in any case.
-def test_find_unknown_genes_accepts_known_symbols(tmp_path):
-    db_path, gene_info = write_test_database(tmp_path), write_test_gene_info(tmp_path)
-    assert find_unknown_genes(["brca1", "TP53", "GENE1"], db_path, gene_info) == []
-
-
-def test_find_unknown_genes_returns_unknown_symbols(tmp_path):
-    db_path, gene_info = write_test_database(tmp_path), write_test_gene_info(tmp_path)
-    assert find_unknown_genes(["BRCA1", "brac1", "TP35"], db_path, gene_info) == ["brac1", "TP35"]
 
 
 def test_near_reference_gap_keeps_only_those_svs_or_only_the_rest(tmp_path):

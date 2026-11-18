@@ -2,9 +2,7 @@
 import sys
 
 from .callers import CALLERS
-from .database import (SVFilter, gene_names, select_sv_ids, sv_calls, sv_rows,
-                       sv_transcript_parts)
-from .genes import GENE_INFO, read_gene_symbols
+from .database import SVFilter, select_sv_ids, sv_calls, sv_rows, sv_transcript_parts
 from .population import DATASETS
 from .svs import SV, Call, GeneDetails, SVPosition, Transcript, TranscriptPart
 from .tsv import write_tsv
@@ -16,14 +14,6 @@ def parse_gene_list(genes, gene_file):
         with open(gene_file) as f:
             gene_set.update(line.strip() for line in f if line.strip())
     return sorted(gene_set)
-
-
-# Return the genes that aren't known symbols, ignoring case. Known symbols are
-# HGNC's plus the database's gene names, which include genes HGNC doesn't name.
-def find_unknown_genes(genes, db_path, gene_info=GENE_INFO):
-    known = {symbol.upper() for symbol in read_gene_symbols(gene_info)}
-    known.update(name.upper() for name in gene_names(db_path))
-    return [gene for gene in genes if gene.upper() not in known]
 
 
 # Turn the report's filter options into an SVFilter.
@@ -108,27 +98,12 @@ def _load_transcript_parts(db_path, sv_ids):
     return parts
 
 
-# Ask a yes/no question, defaulting to no.
-def _confirm(question):
-    try:
-        return input(f"{question} [y/N] ").strip().lower() in ("y", "yes")
-    # There's no one to answer, so treat it as no.
-    except EOFError:
-        print()
-        return False
-
-
 def run(args):
     # SQLite would otherwise create an empty database at a mistyped path.
     if not args.database.is_file():
         sys.exit(f"svshare report: {args.database} isn't a file; pass the database "
                  "analyze wrote, e.g. results/svshare.db")
     genes = parse_gene_list(args.genes, args.gene_file)
-    unknown = find_unknown_genes(genes, args.database)
-    if unknown:
-        print(f"These aren't known gene symbols, so no SVs will match them: {', '.join(unknown)}")
-        if not _confirm("Continue anyway?"):
-            sys.exit("svshare report: stopped; check the gene symbols and try again")
     output = args.output or (args.database.parent / f"report.{args.format}")
     print(f"Reporting on {args.database}")
     print(f"  caller-support: {args.caller_support}")
@@ -149,8 +124,20 @@ def run(args):
                                near_reference_gap=args.near_reference_gap)
     sv_ids = select_sv_ids(args.database, sv_filter)
     print(f"{len(sv_ids)} SVs pass the filters")
+    svs = load_svs(args.database, sv_ids)
+    if genes:
+        missing = []
+        for gene in genes:
+            overlapped = False
+            for sv in svs:
+                if sv.overlaps_gene(gene):
+                    overlapped = True
+            if not overlapped:
+                missing.append(gene)
+        if missing:
+            print(f"  No SVs that pass the filters overlap: {', '.join(missing)}")
     if args.format == "tsv":
-        write_tsv(load_svs(args.database, sv_ids), output)
+        write_tsv(svs, output)
         print(f"Wrote {output}")
     else:
         print("HTML reports aren't written yet; pass --format tsv for a table")

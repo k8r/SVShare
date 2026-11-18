@@ -64,13 +64,12 @@ def _weakest_sample_support(calls):
 # regions are the kinds of part it overlaps across the gene's transcripts.
 def _overlapped_genes(sv):
     genes = {}
-    for part in sv.transcript_parts:
-        if part.overlaps_sv:
-            transcript = part.transcript
-            _details, regions = genes.setdefault(
-                (transcript.gene_name, transcript.gene_id), (transcript.gene_details, set())
-            )
-            regions.add(part.region)
+    for part in sv.overlapped_parts():
+        transcript = part.transcript
+        _details, regions = genes.setdefault(
+            (transcript.gene_name, transcript.gene_id), (transcript.gene_details, set())
+        )
+        regions.add(part.region)
     return [(name, details, sorted(regions, key=_region_order))
             for (name, _gene_id), (details, regions) in sorted(genes.items())]
 

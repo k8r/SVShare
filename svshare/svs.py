@@ -80,6 +80,21 @@ class SV:
     colorsdb_af: float | None = None
     near_reference_gap: str | None = None
 
+    # Return the transcript parts this SV overlaps.
+    def overlapped_parts(self):
+        parts = []
+        for part in self.transcript_parts:
+            if part.overlaps_sv:
+                parts.append(part)
+        return parts
+
+    # Return whether this SV overlaps a part of the given gene, ignoring case.
+    def overlaps_gene(self, gene_name):
+        for part in self.overlapped_parts():
+            if part.transcript.gene_name.upper() == gene_name.upper():
+                return True
+        return False
+
 
 # Where an SV ends on the reference: at its position if it's an insertion or
 # breakend or its VCF has no END, otherwise at its VCF END.
