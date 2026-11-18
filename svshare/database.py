@@ -302,7 +302,7 @@ def _insert_svs(db, svs):
 # each SV.
 def _insert_transcripts(db, svs):
     transcripts = {part.transcript.transcript_id: part.transcript
-                   for sv in svs for part in sv.transcript_parts}
+                   for sv in svs for part in sv.all_parts()}
     db.executemany(
         "INSERT INTO transcripts (transcript_id, gene_name, gene_id, transcript_type,"
         " mane_select, chrom, strand) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -311,19 +311,29 @@ def _insert_transcripts(db, svs):
           transcript.strand)
          for _, transcript in sorted(transcripts.items())],
     )
+    rows = []
+    for sv in svs:
+        for part in sv.overlapped_parts:
+            rows.append(_part_row(sv, part, overlaps_sv=True))
+        for part in sv.nearby_parts:
+            rows.append(_part_row(sv, part, overlaps_sv=False))
     db.executemany(
         "INSERT INTO sv_transcript_parts (sv_id, transcript_id, region, number, pos,"
         " end_pos, overlaps_sv) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [(sv.sv_id, part.transcript.transcript_id, part.region, part.number, part.pos,
-          part.end, part.overlaps_sv)
-         for sv in svs for part in sv.transcript_parts],
+        rows,
     )
+
+
+# Return the given part's sv_transcript_parts row.
+def _part_row(sv, part, overlaps_sv):
+    return (sv.sv_id, part.transcript.transcript_id, part.region, part.number,
+            part.pos, part.end, overlaps_sv)
 
 
 # Insert the details of each gene near the SVs, once each.
 def _insert_genes(db, svs):
     genes = {part.transcript.gene_details.gene_id: part.transcript.gene_details
-             for sv in svs for part in sv.transcript_parts if part.transcript.gene_details}
+             for sv in svs for part in sv.all_parts() if part.transcript.gene_details}
     db.executemany(
         "INSERT INTO genes (gene_id, hgnc_id, full_name, summary,"
         " haploinsufficiency_score, haploinsufficiency, triplosensitivity_score,"

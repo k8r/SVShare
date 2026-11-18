@@ -128,8 +128,8 @@ def test_transcript_regions_splits_a_codon_split_across_exons(tmp_path):
 #     side, so it gets every part of T1 and T1b in it, and nothing of T2
 #   - parts have their numbers and 1-based positions, ordered by transcript and
 #     then position
-#   - only the parts the deletion itself overlaps are marked: T1's first CDS
-#     piece, T1's intron, T1b's promoter, and T1b's exon
+#   - the parts the deletion itself overlaps, T1's first CDS piece, T1's intron,
+#     T1b's promoter, and T1b's exon, are kept apart from the ones only nearby
 #   - the second deletion gets no parts
 def test_find_sv_transcripts_finds_parts_around_each_sv(tmp_path):
     svs = [
@@ -141,17 +141,20 @@ def test_find_sv_transcripts_finds_parts_around_each_sv(tmp_path):
 
     t1 = Transcript("T1", "GENE1", "GENE1_ID", "protein_coding", True, "chr1", "+")
     t1b = Transcript("T1b", "GENE1", "GENE1_ID", "lncRNA", False, "chr1", "+")
-    assert svs[0].transcript_parts == [
-        TranscriptPart(t1, "promoter", None, 1, 1000, False),
-        TranscriptPart(t1, "UTR", 1, 1001, 1200, False),
-        TranscriptPart(t1, "start_codon", 1, 1201, 1203, False),
-        TranscriptPart(t1, "CDS", 1, 1204, 2000, True),
-        TranscriptPart(t1, "intron", 1, 2001, 3000, True),
-        TranscriptPart(t1, "CDS", 2, 3001, 4800, False),
-        TranscriptPart(t1b, "promoter", None, 201, 2200, True),
-        TranscriptPart(t1b, "noncoding_exon", 1, 2201, 2400, True),
+    assert svs[0].overlapped_parts == [
+        TranscriptPart(t1, "CDS", 1, 1204, 2000),
+        TranscriptPart(t1, "intron", 1, 2001, 3000),
+        TranscriptPart(t1b, "promoter", None, 201, 2200),
+        TranscriptPart(t1b, "noncoding_exon", 1, 2201, 2400),
     ]
-    assert svs[1].transcript_parts == []
+    assert svs[0].nearby_parts == [
+        TranscriptPart(t1, "promoter", None, 1, 1000),
+        TranscriptPart(t1, "UTR", 1, 1001, 1200),
+        TranscriptPart(t1, "start_codon", 1, 1201, 1203),
+        TranscriptPart(t1, "CDS", 2, 3001, 4800),
+    ]
+    assert svs[1].overlapped_parts == []
+    assert svs[1].nearby_parts == []
     assert count_affected_svs(svs) == 1
 
 
@@ -164,7 +167,7 @@ def test_find_sv_transcripts_reuses_existing_regions_bed(tmp_path):
     find_sv_transcripts(svs, tmp_path / "missing.gtf.gz", tmp_path, regions_bed)
 
     t1 = Transcript("T1", "GENE1", "GENE1_ID", "protein_coding", True, "chr1", "+")
-    assert svs[0].transcript_parts == [TranscriptPart(t1, "CDS", 1, 1201, 2000, True)]
+    assert svs[0].overlapped_parts == [TranscriptPart(t1, "CDS", 1, 1201, 2000)]
 
 
 # Checks that each SV's window is built around where it ends on the reference,

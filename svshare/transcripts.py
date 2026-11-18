@@ -173,20 +173,30 @@ def find_sv_transcripts(svs, gtf, out_dir, regions_bed=None):
                     transcript_id, gene_name, gene_id, transcript_type, mane_select == "1",
                     chrom, strand,
                 )
-            svs_by_id[sv_id].transcript_parts.append(TranscriptPart(
+            part = TranscriptPart(
                 transcripts[transcript_id], region, None if number == "." else int(number),
-                start + 1, end, start < sv_end and end > sv_start,
-            ))
+                start + 1, end,
+            )
+            if start < sv_end and end > sv_start:
+                svs_by_id[sv_id].overlapped_parts.append(part)
+            else:
+                svs_by_id[sv_id].nearby_parts.append(part)
 
     for sv in svs:
-        sv.transcript_parts.sort(key=lambda part: (part.transcript.transcript_id, part.pos))
+        sv.overlapped_parts.sort(key=_part_order)
+        sv.nearby_parts.sort(key=_part_order)
     return ToolRun(None, "bedtools", cmd, overlaps_bed)
+
+
+# Sort key for transcript parts: by transcript and then position.
+def _part_order(part):
+    return (part.transcript.transcript_id, part.pos)
 
 
 # Return how many SVs overlap a part of a transcript.
 def count_affected_svs(svs):
     count = 0
     for sv in svs:
-        if sv.overlapped_parts():
+        if sv.overlapped_parts:
             count += 1
     return count

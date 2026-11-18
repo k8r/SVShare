@@ -44,12 +44,11 @@ def test_add_genes_sets_details_for_each_gene_near_an_sv(tmp_path):
     t3 = make_transcript("T3", "GENE3", "ENSG03.2")
     position = SVPosition("chr1", 1000, 2000, 2000, "DEL", -1000)
     svs = [
-        SV(1, position, [], transcript_parts=[
-            TranscriptPart(t1, "CDS", 1, 1000, 1100, True),
-            TranscriptPart(t1b, "CDS", 1, 1000, 1100, True),
-            TranscriptPart(t2, "intron", 1, 1500, 1600, True),
-        ]),
-        SV(2, position, [], transcript_parts=[TranscriptPart(t3, "CDS", 1, 1000, 1100, True)]),
+        SV(1, position, [],
+           overlapped_parts=[TranscriptPart(t1, "CDS", 1, 1000, 1100),
+                             TranscriptPart(t1b, "CDS", 1, 1000, 1100)],
+           nearby_parts=[TranscriptPart(t2, "intron", 1, 1500, 1600)]),
+        SV(2, position, [], overlapped_parts=[TranscriptPart(t3, "CDS", 1, 1000, 1100)]),
     ]
 
     assert add_genes(svs, write_gene_info(tmp_path)) == (1, 1, 3)

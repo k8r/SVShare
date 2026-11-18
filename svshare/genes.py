@@ -29,7 +29,7 @@ def add_genes(svs, gene_info=GENE_INFO):
     info = read_gene_info(gene_info)
     genes = {}
     for sv in svs:
-        for part in sv.transcript_parts:
+        for part in sv.all_parts():
             transcript = part.transcript
             if transcript.gene_id not in genes:
                 genes[transcript.gene_id] = _gene_details(transcript.gene_id, info)

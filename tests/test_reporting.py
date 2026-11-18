@@ -248,7 +248,7 @@ def test_svs_are_in_genome_order_and_only_the_given_ones(tmp_path):
     assert [sv.sv_id for sv in load_svs(db_path, [1, 2])] == [2, 1]
 
 
-# Each SV gets every transcript part near it, whether it overlaps it or not,
+# Each SV gets the transcript parts it overlaps and the ones only near it, each
 # with its transcript and its gene's details.
 def test_load_svs(tmp_path):
     svs = load_svs(write_load_test_database(tmp_path), [1, 2, 3])
@@ -261,21 +261,21 @@ def test_load_svs(tmp_path):
     assert svs == [
         SV(3, SVPosition("chr2", 100, 9000, 100, "BND", 0),
            [Call("HG003", "sniffles2", "0/1", 5)],
-           transcript_parts=[TranscriptPart(t1, "promoter", None, 150, 249, False),
-                             TranscriptPart(t2, "promoter", None, 50, 150, True)]),
+           overlapped_parts=[TranscriptPart(t2, "promoter", None, 50, 150)],
+           nearby_parts=[TranscriptPart(t1, "promoter", None, 150, 249)]),
         SV(2, SVPosition("chr2", 300, 300, 300, "INS", 50),
            [Call("HG002", "cutesv", "0|1", 6), Call("HG002", "sniffles2", "0|1", 6)],
            colorsdb_af=0.005, near_reference_gap="350 bp from 20 unknown bases",
-           transcript_parts=[TranscriptPart(t1, "intron", 1, 250, 400, True),
-                             TranscriptPart(t1b, "UTR", 1, 280, 320, True)]),
+           overlapped_parts=[TranscriptPart(t1, "intron", 1, 250, 400),
+                             TranscriptPart(t1b, "UTR", 1, 280, 320)]),
         SV(1, SVPosition("chr10", 500, 600, 600, "DEL", -100),
            [Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
             Call("HG003", "cutesv", "./.", None)]),
     ]
     # Parts of the same transcript, and transcripts of the same gene, share one object.
-    assert svs[0].transcript_parts[0].transcript is svs[1].transcript_parts[0].transcript
-    assert (svs[1].transcript_parts[0].transcript.gene_details
-            is svs[1].transcript_parts[1].transcript.gene_details)
+    assert svs[0].nearby_parts[0].transcript is svs[1].overlapped_parts[0].transcript
+    assert (svs[1].overlapped_parts[0].transcript.gene_details
+            is svs[1].overlapped_parts[1].transcript.gene_details)
 
 
 def test_chromosomes_sort_by_number_then_x_y_m_then_name():

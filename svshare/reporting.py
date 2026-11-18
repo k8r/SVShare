@@ -55,7 +55,7 @@ def load_svs(db_path, sv_ids):
         calls.setdefault(row["sv_id"], []).append(
             Call(row["sample"], row["caller"], row["genotype"], row["read_support"])
         )
-    parts = _load_transcript_parts(db_path, sv_ids)
+    overlapped, nearby = _load_transcript_parts(db_path, sv_ids)
 
     svs = []
     for row in sv_rows(db_path, sv_ids):
@@ -67,17 +67,18 @@ def load_svs(db_path, sv_ids):
             row["sv_id"], position, calls.get(row["sv_id"], []),
             gnomad_af=row["gnomad_af"], colorsdb_af=row["colorsdb_af"],
             near_reference_gap=row["near_reference_gap"],
-            transcript_parts=parts.get(row["sv_id"], []),
+            overlapped_parts=overlapped.get(row["sv_id"], []),
+            nearby_parts=nearby.get(row["sv_id"], []),
         ))
     svs.sort(key=lambda sv: (_chrom_order(sv.position.chrom), sv.position.pos, sv.sv_id))
     return svs
 
 
-# Return the transcript parts near each SV in sv_ids, by SV ID. Parts of the same
-# transcript share one Transcript, and transcripts of the same gene share one
-# GeneDetails.
+# Return the transcript parts each SV in sv_ids overlaps and the ones only near
+# it, each by SV ID. Parts of the same transcript share one Transcript, and
+# transcripts of the same gene share one GeneDetails.
 def _load_transcript_parts(db_path, sv_ids):
-    genes, transcripts, parts = {}, {}, {}
+    genes, transcripts, overlapped, nearby = {}, {}, {}, {}
     for row in sv_transcript_parts(db_path, sv_ids):
         gene_id, transcript_id = row["gene_id"], row["transcript_id"]
         if gene_id not in genes:
@@ -91,11 +92,13 @@ def _load_transcript_parts(db_path, sv_ids):
                 transcript_id, row["gene_name"], gene_id, row["transcript_type"],
                 bool(row["mane_select"]), row["chrom"], row["strand"], genes[gene_id],
             )
-        parts.setdefault(row["sv_id"], []).append(TranscriptPart(
+        part = TranscriptPart(
             transcripts[transcript_id], row["region"], row["number"], row["pos"],
-            row["end_pos"], bool(row["overlaps_sv"]),
-        ))
-    return parts
+            row["end_pos"],
+        )
+        parts = overlapped if row["overlaps_sv"] else nearby
+        parts.setdefault(row["sv_id"], []).append(part)
+    return overlapped, nearby
 
 
 def run(args):

@@ -205,8 +205,9 @@ def test_write_database_keeps_one_row_per_call(tmp_path):
 
 
 # Checks that what the analyze steps find about an SV is saved: its gap and
-# population matches in its row, and its transcript parts, their transcripts,
-# and their genes' details once each, though two parts share a transcript.
+# population matches in its row, its overlapped and nearby transcript parts,
+# marked by whether it overlaps them, and their transcripts and genes' details
+# once each, though two parts share a transcript.
 def test_write_database_saves_what_was_found_about_each_sv(tmp_path):
     gene = GeneDetails("GENE1_ID", "HGNC:1", "gene one", "Does things.", 3, "Sufficient")
     transcript = Transcript("T1", "GENE1", "GENE1_ID", "protein_coding", True, "chr1", "+",
@@ -216,10 +217,8 @@ def test_write_database_saves_what_was_found_about_each_sv(tmp_path):
         [Call("HG002", "sniffles2", "0/1", 22, "a", "chr1", 1000, 1150, "DEL", -150)],
         gnomad_id="g1", gnomad_af=0.25, colorsdb_id="c1", colorsdb_af=0.5,
         near_reference_gap="350 bp from 20 unknown bases",
-        transcript_parts=[
-            TranscriptPart(transcript, "CDS", 1, 900, 1100, True),
-            TranscriptPart(transcript, "intron", 1, 1101, 2000, True),
-        ],
+        overlapped_parts=[TranscriptPart(transcript, "CDS", 1, 900, 1100)],
+        nearby_parts=[TranscriptPart(transcript, "intron", 1, 1101, 2000)],
     )
 
     db_path = write_database(tmp_path / "svshare.db", [sv], [])
@@ -234,7 +233,7 @@ def test_write_database_saves_what_was_found_about_each_sv(tmp_path):
     ]
     assert read_rows(db_path, "sv_transcript_parts") == [
         (1, "T1", "CDS", 1, 900, 1100, 1),
-        (1, "T1", "intron", 1, 1101, 2000, 1),
+        (1, "T1", "intron", 1, 1101, 2000, 0),
     ]
     assert read_rows(db_path, "genes") == [
         ("GENE1_ID", "HGNC:1", "gene one", "Does things.", 3, "Sufficient", None, None),

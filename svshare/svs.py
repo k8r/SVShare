@@ -46,7 +46,7 @@ class Transcript:
     gene_details: GeneDetails | None = None
 
 
-# A part of a transcript near an SV, and whether the SV overlaps it.
+# A part of a transcript near an SV.
 @dataclass
 class TranscriptPart:
     transcript: Transcript
@@ -54,7 +54,6 @@ class TranscriptPart:
     number: int | None
     pos: int
     end: int
-    overlaps_sv: bool
 
 
 # Where an SV is, and its type and length.
@@ -73,24 +72,24 @@ class SV:
     sv_id: int
     position: SVPosition
     calls: list[Call]
-    transcript_parts: list[TranscriptPart] = field(default_factory=list)
+    # The transcript parts this SV overlaps.
+    overlapped_parts: list[TranscriptPart] = field(default_factory=list)
+    # The transcript parts near this SV that it doesn't overlap, for showing it in
+    # context.
+    nearby_parts: list[TranscriptPart] = field(default_factory=list)
     gnomad_id: str | None = None
     gnomad_af: float | None = None
     colorsdb_id: str | None = None
     colorsdb_af: float | None = None
     near_reference_gap: str | None = None
 
-    # Return the transcript parts this SV overlaps.
-    def overlapped_parts(self):
-        parts = []
-        for part in self.transcript_parts:
-            if part.overlaps_sv:
-                parts.append(part)
-        return parts
+    # Return every transcript part near this SV, overlapped or not.
+    def all_parts(self):
+        return self.overlapped_parts + self.nearby_parts
 
     # Return whether this SV overlaps a part of the given gene, ignoring case.
     def overlaps_gene(self, gene_name):
-        for part in self.overlapped_parts():
+        for part in self.overlapped_parts:
             if part.transcript.gene_name.upper() == gene_name.upper():
                 return True
         return False

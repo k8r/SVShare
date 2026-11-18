@@ -14,15 +14,14 @@ def test_reference_end():
 def make_sv_near_genes():
     gene1 = Transcript("T1", "GENE1", "G1", "protein_coding", True, "chr1", "+")
     gene2 = Transcript("T2", "GENE2", "G2", "protein_coding", True, "chr1", "+")
-    return SV(1, SVPosition("chr1", 1000, 2000, 2000, "DEL", -1000), [], transcript_parts=[
-        TranscriptPart(gene1, "intron", 1, 1500, 2500, True),
-        TranscriptPart(gene2, "promoter", None, 2500, 4499, False),
-    ])
+    return SV(1, SVPosition("chr1", 1000, 2000, 2000, "DEL", -1000), [],
+              overlapped_parts=[TranscriptPart(gene1, "intron", 1, 1500, 2500)],
+              nearby_parts=[TranscriptPart(gene2, "promoter", None, 2500, 4499)])
 
 
-def test_overlapped_parts_leaves_out_parts_only_nearby():
+def test_all_parts_has_overlapped_and_nearby_parts():
     sv = make_sv_near_genes()
-    assert sv.overlapped_parts() == [sv.transcript_parts[0]]
+    assert sv.all_parts() == [sv.overlapped_parts[0], sv.nearby_parts[0]]
 
 
 # Genes match in any case, and a gene only nearby doesn't count.
