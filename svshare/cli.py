@@ -128,11 +128,12 @@ def build_parser():
     report_parser.add_argument(
         "--genes", type=_comma_separated, default=None,
         help="Keep SVs that overlap the promoter, exons, or introns of one of these "
-        "comma-separated genes, e.g. TP53,BRCA1."
+        "comma-separated genes, given by symbol or Ensembl ID, e.g. TP53,ENSG00000012048."
     )
     report_parser.add_argument(
         "--gene-file", type=Path, default=None,
-        help="Text file of gene symbols, one per line, no header, used like --genes.",
+        help="Text file of gene symbols or Ensembl IDs, one per line, no header, used like "
+        "--genes.",
     )
     report_parser.add_argument(
         "--region", type=_region, default=None,

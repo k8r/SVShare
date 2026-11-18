@@ -87,10 +87,15 @@ class SV:
     def all_parts(self):
         return self.overlapped_parts + self.nearby_parts
 
-    # Return whether this SV overlaps a part of the given gene, ignoring case.
-    def overlaps_gene(self, gene_name):
+    # Return whether this SV overlaps a part of the given gene, by its name or its
+    # Ensembl ID, ignoring case and any ID version.
+    def overlaps_gene(self, gene):
+        gene_id = gene.split(".")[0].upper()
         for part in self.overlapped_parts:
-            if part.transcript.gene_name.upper() == gene_name.upper():
+            transcript = part.transcript
+            if transcript.gene_name.upper() == gene.upper():
+                return True
+            if transcript.gene_id.split(".")[0].upper() == gene_id:
                 return True
         return False
 

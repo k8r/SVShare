@@ -59,9 +59,9 @@ def write_test_database(tmp_path):
                  gnomad_af=0.02, colorsdb_af=0.001),
         ],
         transcripts=[
-            dict(transcript_id="T1", gene_name="GENE1", gene_id="G1",
+            dict(transcript_id="T1", gene_name="GENE1", gene_id="ENSG01.5",
                  transcript_type="protein_coding", mane_select=1, chrom="chr1", strand="+"),
-            dict(transcript_id="T2", gene_name="GENE2", gene_id="G2",
+            dict(transcript_id="T2", gene_name="GENE2", gene_id="ENSG02.1",
                  transcript_type="protein_coding", mane_select=1, chrom="chr2", strand="+"),
         ],
         sv_transcript_parts=[
@@ -142,6 +142,14 @@ def test_genes_keeps_svs_overlapping_a_listed_gene(tmp_path):
     assert select_sv_ids(db_path, SVFilter(genes=("GENE1",))) == [1]
     assert select_sv_ids(db_path, SVFilter(genes=("gene2",))) == [3]
     assert select_sv_ids(db_path, SVFilter(genes=("GENE1", "GENE2"))) == [1, 3]
+
+
+# Genes can be given by Ensembl ID, in any case and with or without its version.
+def test_genes_matches_ensembl_ids(tmp_path):
+    db_path = write_test_database(tmp_path)
+    assert select_sv_ids(db_path, SVFilter(genes=("ENSG01",))) == [1]
+    assert select_sv_ids(db_path, SVFilter(genes=("ensg02.1",))) == [3]
+    assert select_sv_ids(db_path, SVFilter(genes=("ENSG02.7", "GENE1"))) == [1, 3]
 
 
 # Regions are compared with where each SV ends on the reference, so 4's END is

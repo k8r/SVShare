@@ -12,7 +12,7 @@ def test_reference_end():
 
 # An SV with GENE1's intron overlapped and GENE2's promoter only nearby.
 def make_sv_near_genes():
-    gene1 = Transcript("T1", "GENE1", "G1", "protein_coding", True, "chr1", "+")
+    gene1 = Transcript("T1", "GENE1", "ENSG01.5", "protein_coding", True, "chr1", "+")
     gene2 = Transcript("T2", "GENE2", "G2", "protein_coding", True, "chr1", "+")
     return SV(1, SVPosition("chr1", 1000, 2000, 2000, "DEL", -1000), [],
               overlapped_parts=[TranscriptPart(gene1, "intron", 1, 1500, 2500)],
@@ -24,10 +24,14 @@ def test_all_parts_has_overlapped_and_nearby_parts():
     assert sv.all_parts() == [sv.overlapped_parts[0], sv.nearby_parts[0]]
 
 
-# Genes match in any case, and a gene only nearby doesn't count.
+# Genes match by name or Ensembl ID, in any case and with or without the ID's
+# version, and a gene only nearby doesn't count.
 def test_overlaps_gene():
     sv = make_sv_near_genes()
     assert sv.overlaps_gene("GENE1")
     assert sv.overlaps_gene("gene1")
+    assert sv.overlaps_gene("ENSG01")
+    assert sv.overlaps_gene("ensg01.5")
+    assert sv.overlaps_gene("ENSG01.9")
     assert not sv.overlaps_gene("GENE2")
     assert not sv.overlaps_gene("GENE3")

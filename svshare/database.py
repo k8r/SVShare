@@ -212,13 +212,21 @@ def _allele_frequency_condition(population_datasets, max_allele_frequency):
     )
 
 
+# Matches SVs that overlap a part of one of the given genes, by name or by
+# Ensembl ID, ignoring case and any ID version.
 def _genes_condition(genes):
     if not genes:
         return None
+    gene_ids = []
+    for gene in genes:
+        gene_ids.append(gene.split(".")[0])
+    placeholders = ", ".join("?" * len(genes))
+    gene_id_without_version = "substr(gene_id, 1, instr(gene_id || '.', '.') - 1)"
     return (
         "sv_id IN (SELECT sv_id FROM sv_transcript_parts JOIN transcripts USING (transcript_id)"
-        f" WHERE overlaps_sv = 1 AND gene_name COLLATE NOCASE IN ({', '.join('?' * len(genes))}))",
-        list(genes),
+        f" WHERE overlaps_sv = 1 AND (gene_name COLLATE NOCASE IN ({placeholders})"
+        f" OR {gene_id_without_version} COLLATE NOCASE IN ({placeholders})))",
+        list(genes) + gene_ids,
     )
 
 

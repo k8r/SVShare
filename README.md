@@ -92,7 +92,7 @@ Available filter options:
 
 `--max-frequency` filters SVs by how common they are. An SV's allele frequency in gnomAD or CoLoRSdb is the fraction of chromosomes in that database's population that carry it, from 0 to 1. An SV passes if, in each database, its frequency is at most `--max-frequency` or it isn't found there.
 
-`--genes` keeps SVs that overlap the promoter (the 2,000 bp upstream of a transcript's start), exons, or introns of at least one of the listed genes.
+`--genes` keeps SVs that overlap the promoter (the 2,000 bp upstream of a transcript's start), exons, or introns of at least one of the listed genes. Genes can be given by symbol (`BRCA1`) or Ensembl ID (`ENSG00000012048`, with or without its version), in any case.
 
 For longer gene lists, users can provide a text file:
 
@@ -101,7 +101,7 @@ python3 -m svshare report results/svshare.db \
   --gene-file genes.txt
 ```
 
-The gene list file should contain **one gene symbol per line** with no header:
+The gene list file should contain **one gene symbol or Ensembl ID per line** with no header:
 
 ```text
 BRCA1
