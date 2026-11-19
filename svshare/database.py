@@ -120,6 +120,7 @@ class SVFilter:
     population_datasets: tuple[str, ...] = ()
     max_allele_frequency: float | None = None
     genes: tuple[str, ...] = ()
+    overlaps_any_transcript: bool = False
     region: tuple[str, int, int] | None = None
     # True keeps only SVs at or near a reference gap, False only the rest.
     near_reference_gap: bool | None = None
@@ -230,6 +231,12 @@ def _genes_condition(genes):
     )
 
 
+def _overlaps_any_transcript_condition(overlaps_any_transcript):
+    if not overlaps_any_transcript:
+        return None
+    return "sv_id IN (SELECT sv_id FROM sv_transcript_parts WHERE overlaps_sv = 1)", []
+
+
 def _region_condition(region):
     if region is None:
         return None
@@ -252,6 +259,7 @@ def select_sv_ids(db_path, sv_filter):
         _allele_frequency_condition(sv_filter.population_datasets,
                                     sv_filter.max_allele_frequency),
         _genes_condition(sv_filter.genes),
+        _overlaps_any_transcript_condition(sv_filter.overlaps_any_transcript),
         _region_condition(sv_filter.region),
         _reference_gap_condition(sv_filter.near_reference_gap),
     ):

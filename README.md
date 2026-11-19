@@ -84,6 +84,7 @@ Available filter options:
 --min-samples <number>                         Default: 2
 --genes <gene1>,<gene2>,...
 --gene-file <file>
+--overlaps-any-gene
 --region <genomic-region>
 --near-reference-gap {exclude,include,only}    Default: exclude
 ```
@@ -109,6 +110,8 @@ BRCA2
 TP53
 PALB2
 ```
+
+`--overlaps-any-gene` keeps SVs that overlap the promoter, exons, or introns of any gene.
 
 `--region` keeps SVs that overlap a region given as `<chrom>:<start>-<end>`, e.g. `chr17:43044295-43125483`.
 

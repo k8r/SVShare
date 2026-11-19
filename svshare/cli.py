@@ -136,6 +136,10 @@ def build_parser():
         "--genes.",
     )
     report_parser.add_argument(
+        "--overlaps-any-gene", action="store_true",
+        help="Keep only SVs that overlap the promoter, exons, or introns of a gene.",
+    )
+    report_parser.add_argument(
         "--region", type=_region, default=None,
         help="Keep SVs that overlap this region, e.g. chr1:1000-2000."
     )

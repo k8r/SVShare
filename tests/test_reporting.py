@@ -152,6 +152,13 @@ def test_genes_matches_ensembl_ids(tmp_path):
     assert select_sv_ids(db_path, SVFilter(genes=("ENSG02.7", "GENE1"))) == [1, 3]
 
 
+# Only parts the SV overlaps count, so 2 (near GENE1's promoter) doesn't pass,
+# and neither does 4, which is near no gene.
+def test_overlaps_any_transcript_keeps_svs_overlapping_a_transcript(tmp_path):
+    db_path = write_test_database(tmp_path)
+    assert select_sv_ids(db_path, SVFilter(overlaps_any_transcript=True)) == [1, 3]
+
+
 # Regions are compared with where each SV ends on the reference, so 4's END is
 # ignored.
 def test_region_keeps_svs_overlapping_it(tmp_path):
@@ -172,10 +179,12 @@ def test_near_reference_gap_keeps_only_those_svs_or_only_the_rest(tmp_path):
 # Call make_sv_filter with the given options, and options that keep every SV for
 # the rest.
 def sv_filter_from(caller_support="any", min_samples=1, sv_type="any", max_frequency=None,
-                   genes=(), region=None, near_reference_gap="include"):
+                   genes=(), overlaps_any_gene=False, region=None,
+                   near_reference_gap="include"):
     return make_sv_filter(caller_support=caller_support, min_samples=min_samples,
                           sv_type=sv_type, max_frequency=max_frequency, genes=genes,
-                          region=region, near_reference_gap=near_reference_gap)
+                          overlaps_any_gene=overlaps_any_gene, region=region,
+                          near_reference_gap=near_reference_gap)
 
 
 def test_make_sv_filter_turns_caller_support_into_callers():
@@ -193,6 +202,11 @@ def test_make_sv_filter_turns_options_into_plain_values():
     assert sv_filter_from(near_reference_gap="include").near_reference_gap is None
     assert sv_filter_from(near_reference_gap="only").near_reference_gap is True
     assert sv_filter_from(near_reference_gap="exclude").near_reference_gap is False
+
+
+def test_make_sv_filter_turns_overlaps_any_gene_into_overlaps_any_transcript():
+    assert sv_filter_from(overlaps_any_gene=True).overlaps_any_transcript is True
+    assert sv_filter_from(overlaps_any_gene=False).overlaps_any_transcript is False
 
 
 # A database with three SVs:

@@ -17,8 +17,8 @@ def parse_gene_list(genes, gene_file):
 
 
 # Turn the report's filter options into an SVFilter.
-def make_sv_filter(caller_support, min_samples, sv_type, max_frequency, genes, region,
-                   near_reference_gap):
+def make_sv_filter(caller_support, min_samples, sv_type, max_frequency, genes,
+                   overlaps_any_gene, region, near_reference_gap):
     if caller_support == "any":
         callers = ()
     elif caller_support == "both":
@@ -32,6 +32,7 @@ def make_sv_filter(caller_support, min_samples, sv_type, max_frequency, genes, r
         population_datasets=tuple(DATASETS),
         max_allele_frequency=max_frequency,
         genes=tuple(genes or ()),
+        overlaps_any_transcript=overlaps_any_gene,
         region=region,
         near_reference_gap={"include": None, "only": True, "exclude": False}[near_reference_gap],
     )
@@ -116,6 +117,8 @@ def run(args):
     print(f"  near-reference-gap: {args.near_reference_gap}")
     if genes:
         print(f"  genes: {', '.join(genes)}")
+    if args.overlaps_any_gene:
+        print("  overlaps-any-gene: yes")
     if args.region:
         chrom, start, end = args.region
         print(f"  region: {chrom}:{start}-{end}")
@@ -123,6 +126,7 @@ def run(args):
     sv_filter = make_sv_filter(caller_support=args.caller_support,
                                min_samples=args.min_samples, sv_type=args.sv_type,
                                max_frequency=args.max_frequency, genes=genes,
+                               overlaps_any_gene=args.overlaps_any_gene,
                                region=args.region,
                                near_reference_gap=args.near_reference_gap)
     sv_ids = select_sv_ids(args.database, sv_filter)
