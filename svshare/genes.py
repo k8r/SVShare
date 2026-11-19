@@ -8,9 +8,6 @@ from .svs import GeneDetails
 GENE_INFO = Path(__file__).parent / "data" / "gene_info.tsv"
 
 
-# ClinGen scores are 0-3 for how strong the evidence is, or 30 (autosomal
-# recessive) or 40 (dosage sensitivity unlikely); anything else, such as "Not
-# yet evaluated", is stored as None.
 def _score(value):
     return int(value) if value.isdigit() else None
 

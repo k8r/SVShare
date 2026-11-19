@@ -27,6 +27,9 @@ class GeneDetails:
     hgnc_id: str | None = None
     full_name: str | None = None
     summary: str | None = None
+    # The ClinGen dosage sensitivity scores below are 0-3 for how strong the
+    # evidence is, or 30 (autosomal recessive) or 40 (dosage sensitivity
+    # unlikely), each with ClinGen's description.
     haploinsufficiency_score: int | None = None
     haploinsufficiency: str | None = None
     triplosensitivity_score: int | None = None

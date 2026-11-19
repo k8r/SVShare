@@ -42,8 +42,6 @@ def run(args):
     print_summary(args, tool_runs)
 
 
-# Make paths absolute so the paths and commands in the summary and database
-# work from any directory.
 def _make_paths_absolute(args):
     args.samples = [bam.absolute() for bam in args.samples]
     for option in ("reference", "output", "vcf_dir", "gnomad", "colorsdb", "gencode",
