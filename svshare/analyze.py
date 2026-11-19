@@ -145,8 +145,8 @@ def _look_up_population_frequencies(svs, args):
             print(f"\nNo --{dataset} file given, so SVs weren't looked up in {name}")
 
 
-# Find the genes each SV overlaps, if --gencode was given. Returns the tool run,
-# or None.
+# Add to each SV the transcript parts it overlaps or is near, with their genes'
+# details, if --gencode was given. Returns the tool run, or None.
 def _find_genes(svs, args):
     if not args.gencode:
         print("\nNo --gencode file given, so SVs weren't matched to genes")
