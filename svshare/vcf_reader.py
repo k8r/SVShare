@@ -29,8 +29,8 @@ def int_or_none(value):
 
 # For each record in Jasmine's merged VCF, yield (chrom, pos, vcf_end, svtype,
 # svlen, members), where members lists the (input index, call ID) pairs merged
-# into it. SUPP_VEC has one digit per input VCF, in file_list order, and IDLIST
-# names the merged calls in that same order.
+# into it. SUPP_VEC has one digit per input VCF, in the order Jasmine was given
+# them, and IDLIST names the merged calls in that same order.
 def read_jasmine_groups(merged_vcf):
     for _id, chrom, pos, info, _fmt in read_vcf_records(merged_vcf):
         inputs = [i for i, bit in enumerate(info["SUPP_VEC"]) if bit == "1"]

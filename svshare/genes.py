@@ -36,7 +36,7 @@ def add_genes(svs, gene_info=GENE_INFO):
     return with_summary, with_dosage, len(genes)
 
 
-# Return what info, from read_gene_info, says about the gene with gene_id.
+# Return the given gene's GeneDetails, filled in from the given info if it's there.
 def _gene_details(gene_id, info):
     # GENCODE's gene IDs carry a version, e.g. ENSG00000159842.18.
     gene = info.get(gene_id.split(".")[0])
