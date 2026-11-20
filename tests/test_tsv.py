@@ -73,9 +73,24 @@ def test_unknown_regions_are_listed_last():
     assert row["genes"] == "GENE1 (CDS, intron, exon)"
 
 
+# Each kind of part is listed once, alphabetically, with CDS and UTR parts
+# counted as exons; parts the SV doesn't overlap are left out.
+def test_overlap_summary_lists_the_kinds_of_part_overlapped():
+    row = _row(make_sv(
+        overlapped_parts=[
+            TranscriptPart(T1, "intron", 1, 250, 280),
+            TranscriptPart(T1B, "UTR", 1, 280, 300),
+            TranscriptPart(T1, "CDS", 1, 301, 400),
+        ],
+        nearby_parts=[TranscriptPart(T2, "promoter", None, 401, 600)],
+    ))
+    assert row["overlap_summary"] == "exon, intron"
+
+
 def test_no_genes():
     row = _row(make_sv())
     assert row["genes"] is None
+    assert row["overlap_summary"] is None
     assert row["gene_full_names"] is None
 
 
@@ -92,6 +107,6 @@ def test_write_tsv(tmp_path):
     assert first.split("\t") == [
         "1", "chr2", "300", "300", "INS", "50", "HG002 (0|1)", "7 from sniffles2 for HG002",
         "7", "350 bp from 20 unknown bases", "sniffles2", "", "0.005", "GENE1 (intron)",
-        "GENE1: gene one", "GENE1: Sufficient evidence", "",
+        "intron", "GENE1: gene one", "GENE1: Sufficient evidence", "",
     ]
     assert second.split("\t")[0] == "2"

@@ -6,13 +6,22 @@ from .callers import CALLERS
 COLUMNS = [
     "genome_order", "chrom", "pos", "end", "svtype", "svlen", "samples",
     "read_support", "weakest_sample_support", "near_reference_gap", "callers",
-    "gnomad_af", "colorsdb_af", "genes", "gene_full_names", "haploinsufficiency",
-    "triplosensitivity",
+    "gnomad_af", "colorsdb_af", "genes", "overlap_summary", "gene_full_names",
+    "haploinsufficiency", "triplosensitivity",
 ]
 
 # The order a gene's parts are listed in, roughly from upstream to downstream.
 # Any other kind of part is listed after these, alphabetically.
-REGION_ORDER = ["promoter", "UTR", "start_codon", "CDS", "stop_codon", "noncoding_exon", "intron"]
+REGION_ORDER = [
+    "promoter", "UTR", "start_codon", "CDS", "stop_codon", "noncoding_transcript_exon",
+    "intron",
+]
+
+# The kind of part each transcript region counts as in the overlap_summary column.
+REGION_KINDS = {
+    "CDS": "exon", "UTR": "exon", "start_codon": "exon", "stop_codon": "exon",
+    "noncoding_transcript_exon": "exon", "intron": "intron", "promoter": "promoter",
+}
 
 
 def _region_order(region):
@@ -74,6 +83,16 @@ def _overlapped_genes(sv):
             for (name, _gene_id), (details, regions) in sorted(genes.items())]
 
 
+# List the kinds of part an SV overlaps, merged across all its genes, in
+# alphabetical order so the column sorts into groups. The genes column has each
+# gene's parts.
+def _overlap_summary(sv):
+    kinds = set()
+    for part in sv.overlapped_parts:
+        kinds.add(REGION_KINDS.get(part.region, part.region))
+    return ", ".join(sorted(kinds)) or None
+
+
 # Join each gene's detail as "GENE: value", skipping genes without one.
 def _per_gene(genes, field):
     values = [(name, getattr(details, field) if details else None) for name, details, _ in genes]
@@ -99,6 +118,7 @@ def _row(sv):
         "colorsdb_af": sv.colorsdb_af,
         "genes": ", ".join(f"{name} ({', '.join(regions)})" for name, _, regions in genes)
                  or None,
+        "overlap_summary": _overlap_summary(sv),
         "gene_full_names": _per_gene(genes, "full_name"),
         "haploinsufficiency": _per_gene(genes, "haploinsufficiency"),
         "triplosensitivity": _per_gene(genes, "triplosensitivity"),
