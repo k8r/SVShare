@@ -12,6 +12,7 @@ class Call:
     caller: str
     genotype: str | None
     read_support: int | None = None
+    reference_support: int | None = None
     vcf_id: str | None = None
     chrom: str | None = None
     pos: int | None = None

@@ -64,7 +64,8 @@ CREATE TABLE calls (
     svtype TEXT,
     svlen INTEGER,
     genotype TEXT,
-    read_support INTEGER
+    read_support INTEGER,
+    reference_support INTEGER
 );
 CREATE INDEX calls_sv_id ON calls(sv_id);
 CREATE INDEX calls_sample ON calls(sample);
@@ -160,7 +161,7 @@ def sv_rows(db_path, sv_ids):
 def sv_calls(db_path, sv_ids):
     with connect(db_path) as db:
         return db.execute(
-            "SELECT sv_id, sample, caller, genotype, read_support FROM calls"
+            "SELECT sv_id, sample, caller, genotype, read_support, reference_support FROM calls"
             f" WHERE {SV_ID_IN} ORDER BY sample, caller",
             [json.dumps(list(sv_ids))],
         ).fetchall()
@@ -306,10 +307,11 @@ def _insert_svs(db, svs):
         )
         db.executemany(
             "INSERT INTO calls (sv_id, sample, caller, vcf_id, chrom, pos, vcf_end,"
-            " svtype, svlen, genotype, read_support)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " svtype, svlen, genotype, read_support, reference_support)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [(sv.sv_id, call.sample, call.caller, call.vcf_id, call.chrom, call.pos,
-              call.vcf_end, call.svtype, call.svlen, call.genotype, call.read_support)
+              call.vcf_end, call.svtype, call.svlen, call.genotype, call.read_support,
+              call.reference_support)
              for call in sv.calls],
         )
 

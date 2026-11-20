@@ -54,7 +54,8 @@ def load_svs(db_path, sv_ids):
     calls = {}
     for row in sv_calls(db_path, sv_ids):
         calls.setdefault(row["sv_id"], []).append(
-            Call(row["sample"], row["caller"], row["genotype"], row["read_support"])
+            Call(row["sample"], row["caller"], row["genotype"], row["read_support"],
+                 row["reference_support"])
         )
     overlapped, nearby = _load_transcript_parts(db_path, sv_ids)
 

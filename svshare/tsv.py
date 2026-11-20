@@ -50,13 +50,19 @@ def _samples(calls):
     return ", ".join(samples)
 
 
-# List how many reads supported each call, by sample and then caller, leaving
-# out calls without a count.
+# List how many reads supported each call, out of all the reads its caller
+# counted there if it counted the reference ones, by sample and then caller,
+# leaving out calls without a count.
 def _read_support(calls):
     calls = sorted((call for call in calls if call.read_support is not None),
                    key=lambda call: (call.sample, list(CALLERS).index(call.caller)))
-    return "; ".join(f"{call.read_support} from {call.caller} for {call.sample}"
-                     for call in calls) or None
+    supports = []
+    for call in calls:
+        support = str(call.read_support)
+        if call.reference_support is not None:
+            support += f" of {call.read_support + call.reference_support}"
+        supports.append(f"{support} from {call.caller} for {call.sample}")
+    return "; ".join(supports) or None
 
 
 # The read support of the least supported sample, taking each sample's

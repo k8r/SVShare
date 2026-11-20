@@ -46,8 +46,10 @@ def read_calls(vcf, sample, caller):
     for vcf_id, chrom, pos, info, fmt in read_vcf_records(vcf):
         calls[vcf_id] = Call(
             sample=sample, caller=caller, genotype=fmt.get("GT"),
-            # Both sniffles2 and cuteSV report variant-supporting reads as DV.
-            read_support=int_or_none(fmt.get("DV")), vcf_id=vcf_id, chrom=chrom, pos=pos,
+            # Both sniffles2 and cuteSV report variant-supporting reads as DV and
+            # reference-supporting reads as DR.
+            read_support=int_or_none(fmt.get("DV")),
+            reference_support=int_or_none(fmt.get("DR")), vcf_id=vcf_id, chrom=chrom, pos=pos,
             vcf_end=int_or_none(info.get("END")), svtype=info.get("SVTYPE"),
             svlen=int_or_none(info.get("SVLEN")),
         )

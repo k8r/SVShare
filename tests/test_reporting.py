@@ -228,7 +228,7 @@ def write_load_test_database(tmp_path):
         ],
         calls=[
             dict(sv_id=1, sample="HG002", caller="cutesv", vcf_id="a", genotype="1/1",
-                 read_support=4),
+                 read_support=4, reference_support=1),
             dict(sv_id=1, sample="HG002", caller="sniffles2", vcf_id="b", genotype="0/1",
                  read_support=3),
             dict(sv_id=1, sample="HG003", caller="cutesv", vcf_id="c", genotype="./."),
@@ -291,7 +291,7 @@ def test_load_svs(tmp_path):
            overlapped_parts=[TranscriptPart(t1, "intron", 1, 250, 400),
                              TranscriptPart(t1b, "UTR", 1, 280, 320)]),
         SV(1, SVPosition("chr10", 500, 600, 600, "DEL", -100),
-           [Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
+           [Call("HG002", "cutesv", "1/1", 4, 1), Call("HG002", "sniffles2", "0/1", 3),
             Call("HG003", "cutesv", "./.", None)]),
     ]
     # Parts of the same transcript, and transcripts of the same gene, share one object.

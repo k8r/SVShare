@@ -25,14 +25,17 @@ def test_samples_list_each_sample_with_its_genotype():
     assert row["callers"] == "sniffles2,cutesv"
 
 
+# Each call's support is shown out of all the reads counted there, when the
+# caller counted the reference reads too.
 def test_read_support_lists_each_call():
     row = _row(make_sv(calls=[
         Call("HG003", "sniffles2", "0/1", 6),
-        Call("HG002", "cutesv", "1/1", 4), Call("HG002", "sniffles2", "0/1", 3),
+        Call("HG002", "cutesv", "1/1", 4, 1), Call("HG002", "sniffles2", "0/1", 3, 4),
         Call("HG004", "cutesv", "./.", None),
     ]))
     assert row["read_support"] == (
-        "3 from sniffles2 for HG002; 4 from cutesv for HG002; 6 from sniffles2 for HG003")
+        "3 of 7 from sniffles2 for HG002; 4 of 5 from cutesv for HG002;"
+        " 6 from sniffles2 for HG003")
 
 
 # Each sample's best-supported call counts, and the lowest of those is reported.

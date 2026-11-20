@@ -166,10 +166,10 @@ def test_read_calls_reads_each_call_by_id(tmp_path):
 
     cutesv = prepped_vcfs[1]
     assert read_calls(cutesv.vcf, cutesv.sample, cutesv.caller) == {
-        "cuteSV.DEL.0": Call("HG003", "cutesv", "./.", 18, "cuteSV.DEL.0", "chr1", 1010, 1150,
-                             "DEL", -140),
-        "cuteSV.INS.0": Call("HG003", "cutesv", "0/1", 9, "cuteSV.INS.0", "chr2", 5000, 5001,
-                             "INS", 300),
+        "cuteSV.DEL.0": Call("HG003", "cutesv", "./.", 18, None, "cuteSV.DEL.0", "chr1", 1010,
+                             1150, "DEL", -140),
+        "cuteSV.INS.0": Call("HG003", "cutesv", "0/1", 9, 20, "cuteSV.INS.0", "chr2", 5000,
+                             5001, "INS", 300),
     }
 
 
@@ -196,11 +196,12 @@ def test_write_database_keeps_one_row_per_call(tmp_path):
     svs = read_merged_svs(merged_vcf, read_all_calls(prepped_vcfs))
     db_path = write_database(tmp_path / "svshare.db", svs, [])
 
-    columns = ("sv_id", "sample", "caller", "vcf_id", "pos", "svlen", "genotype", "read_support")
+    columns = ("sv_id", "sample", "caller", "vcf_id", "pos", "svlen", "genotype", "read_support",
+               "reference_support")
     assert read_rows(db_path, "calls", *columns) == [
-        (1, "HG002", "sniffles2", "Sniffles2.DEL.1", 1000, -150, "0/1", 22),
-        (1, "HG003", "cutesv", "cuteSV.DEL.0", 1010, -140, "./.", 18),
-        (2, "HG003", "cutesv", "cuteSV.INS.0", 5000, 300, "0/1", 9),
+        (1, "HG002", "sniffles2", "Sniffles2.DEL.1", 1000, -150, "0/1", 22, 40),
+        (1, "HG003", "cutesv", "cuteSV.DEL.0", 1010, -140, "./.", 18, None),
+        (2, "HG003", "cutesv", "cuteSV.INS.0", 5000, 300, "0/1", 9, 20),
     ]
 
 
@@ -214,7 +215,7 @@ def test_write_database_saves_what_was_found_about_each_sv(tmp_path):
                             gene)
     sv = SV(
         1, SVPosition("chr1", 1000, 1150, 1150, "DEL", -150),
-        [Call("HG002", "sniffles2", "0/1", 22, "a", "chr1", 1000, 1150, "DEL", -150)],
+        [Call("HG002", "sniffles2", "0/1", 22, 40, "a", "chr1", 1000, 1150, "DEL", -150)],
         gnomad_id="g1", gnomad_af=0.25, colorsdb_id="c1", colorsdb_af=0.5,
         near_reference_gap="350 bp from 20 unknown bases",
         overlapped_parts=[TranscriptPart(transcript, "CDS", 1, 900, 1100)],
