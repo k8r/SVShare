@@ -4,10 +4,10 @@ import csv
 from .callers import CALLERS
 
 COLUMNS = [
-    "genome_order", "chrom", "pos", "end", "svtype", "svlen", "samples",
-    "read_support", "weakest_sample_support", "near_reference_gap", "callers",
-    "gnomad_af", "colorsdb_af", "genes", "overlap_summary", "gene_full_names",
-    "haploinsufficiency", "triplosensitivity",
+    "genome_order", "genes", "overlap_summary", "svtype", "svlen", "gnomad_af",
+    "colorsdb_af", "chrom", "pos", "end", "haploinsufficiency", "triplosensitivity",
+    "samples", "callers", "weakest_sample_support", "read_support",
+    "near_reference_gap", "gene_full_names",
 ]
 
 # The order a gene's parts are listed in, roughly from upstream to downstream.

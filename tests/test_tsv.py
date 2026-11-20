@@ -105,8 +105,8 @@ def test_write_tsv(tmp_path):
     header, first, second = output.read_text().splitlines()
     assert header.split("\t") == COLUMNS
     assert first.split("\t") == [
-        "1", "chr2", "300", "300", "INS", "50", "HG002 (0|1)", "7 from sniffles2 for HG002",
-        "7", "350 bp from 20 unknown bases", "sniffles2", "", "0.005", "GENE1 (intron)",
-        "intron", "GENE1: gene one", "GENE1: Sufficient evidence", "",
+        "1", "GENE1 (intron)", "intron", "INS", "50", "", "0.005", "chr2", "300", "300",
+        "GENE1: Sufficient evidence", "", "HG002 (0|1)", "sniffles2", "7",
+        "7 from sniffles2 for HG002", "350 bp from 20 unknown bases", "GENE1: gene one",
     ]
     assert second.split("\t")[0] == "2"
